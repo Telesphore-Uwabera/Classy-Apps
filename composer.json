@@ -1,0 +1,6 @@
+{
+    "require": {
+        "kreait/laravel-firebase": "^3.4",
+        "kreait/firebase-php": "^5.26"
+    }
+}
