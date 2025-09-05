@@ -5,15 +5,6 @@ import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
-///
-/// Example:
-/// ```dart
-/// import 'firebase_options.dart';
-/// // ...
-/// await Firebase.initializeApp(
-///   options: DefaultFirebaseOptions.currentPlatform,
-/// );
-/// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -41,46 +32,48 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBvQvQvQvQvQvQvQvQvQvQvQvQvQvQvQvQ',
-    appId: '1:123456789:web:abcdef123456789',
-    messagingSenderId: '123456789',
+    apiKey: 'AIzaSyASmUafz431YLkL6d1tNL9qv5cuHC1TkDw',
+    appId: '1:156854442550:web:YOUR_WEB_APP_ID',
+    messagingSenderId: '156854442550',
     projectId: 'classyapp-unified-backend',
     authDomain: 'classyapp-unified-backend.firebaseapp.com',
-    storageBucket: 'classyapp-unified-backend.appspot.com',
+    databaseURL: 'https://classyapp-unified-backend.firebaseio.com',
+    storageBucket: 'classyapp-unified-backend.firebasestorage.app',
+    measurementId: 'YOUR_MEASUREMENT_ID',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBvQvQvQvQvQvQvQvQvQvQvQvQvQvQvQvQ',
-    appId: '1:123456789:android:abcdef123456789',
-    messagingSenderId: '123456789',
+    apiKey: 'AIzaSyCugyfh2vjI7gHqGb6uRCmAKNV0xWG_Xrs',
+    appId: '1:156854442550:android:f96d46d9f1c961983b9697',
+    messagingSenderId: '156854442550',
     projectId: 'classyapp-unified-backend',
-    storageBucket: 'classyapp-unified-backend.appspot.com',
+    storageBucket: 'classyapp-unified-backend.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBvQvQvQvQvQvQvQvQvQvQvQvQvQvQvQvQ',
-    appId: '1:123456789:ios:abcdef123456789',
-    messagingSenderId: '123456789',
+    apiKey: 'AIzaSyASmUafz431YLkL6d1tNL9qv5cuHC1TkDw',
+    appId: '1:156854442550:ios:324810390e6ce95e3b9697',
+    messagingSenderId: '156854442550',
     projectId: 'classyapp-unified-backend',
-    storageBucket: 'classyapp-unified-backend.appspot.com',
+    storageBucket: 'classyapp-unified-backend.firebasestorage.app',
     iosBundleId: 'com.classy.driver',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBvQvQvQvQvQvQvQvQvQvQvQvQvQvQvQvQ',
-    appId: '1:123456789:ios:abcdef123456789',
-    messagingSenderId: '123456789',
+    apiKey: 'AIzaSyASmUafz431YLkL6d1tNL9qv5cuHC1TkDw',
+    appId: '1:156854442550:ios:324810390e6ce95e3b9697',
+    messagingSenderId: '156854442550',
     projectId: 'classyapp-unified-backend',
-    storageBucket: 'classyapp-unified-backend.appspot.com',
+    storageBucket: 'classyapp-unified-backend.firebasestorage.app',
     iosBundleId: 'com.classy.driver',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBvQvQvQvQvQvQvQvQvQvQvQvQvQvQvQvQ',
-    appId: '1:123456789:web:abcdef123456789',
-    messagingSenderId: '123456789',
+    apiKey: 'AIzaSyASmUafz431YLkL6d1tNL9qv5cuHC1TkDw',
+    appId: '1:156854442550:web:YOUR_WEB_APP_ID',
+    messagingSenderId: '156854442550',
     projectId: 'classyapp-unified-backend',
     authDomain: 'classyapp-unified-backend.firebaseapp.com',
-    storageBucket: 'classyapp-unified-backend.appspot.com',
+    storageBucket: 'classyapp-unified-backend.firebasestorage.app',
   );
 }

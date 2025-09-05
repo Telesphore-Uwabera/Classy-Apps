@@ -1,7 +1,7 @@
 flutter_application_id:
   android:
-    id: "online.edentech.Classy"
-    name: "Glover"
+    id: "com.classy.customer"
+    name: "Classy"
   ios:
-    id: "online.edentech.Classy"
-    name: "Glover"
+    id: "com.classy.customer"
+    name: "Classy"

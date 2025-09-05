@@ -17,7 +17,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "online.edentech.Classy"
+    namespace = "com.classy.customer"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -31,7 +31,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "online.edentech.Classy"
+        applicationId = "com.classy.customer"
         minSdk = 24
         targetSdk = 35
         ndkVersion = "27.0.12077973"

@@ -10,7 +10,6 @@ import 'package:Classy/views/pages/auth/login/compain_login_type.view.dart';
 
 import 'package:Classy/views/pages/auth/login/otp_login.view.dart';
 import 'package:Classy/views/pages/auth/login/phone_login.view.dart';
-import 'package:Classy/views/pages/auth/login/social_media.view.dart';
 import 'package:Classy/widgets/base.page.dart';
 import 'package:Classy/widgets/buttons/arrow_indicator.dart';
 import 'package:Classy/widgets/dynamic_status_bar.dart';
@@ -139,7 +138,6 @@ class _LoginPageState extends State<LoginPage> {
                             .makeCentered()
                             .py12()
                             .onInkTap(model.openRegister),
-                        SocialMediaView(model, bottomPadding: 10),
                       ]).scrollVertical(),
                 ),
               ),

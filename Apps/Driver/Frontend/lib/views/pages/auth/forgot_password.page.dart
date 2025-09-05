@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fuodz/services/language.service.dart';
 import 'package:fuodz/services/country.service.dart';
 import 'package:fuodz/widgets/country_picker_widget.dart';
+import 'package:fuodz/view_models/forgot_password.view_model.dart';
 import 'package:provider/provider.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -111,6 +112,19 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       ),
                       
                       SizedBox(height: 40),
+                      
+                      // Title
+                      Text(
+                        'Forgot Password',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFE91E63),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      
+                      SizedBox(height: 8),
                       
                       // Subtitle
                       Text(

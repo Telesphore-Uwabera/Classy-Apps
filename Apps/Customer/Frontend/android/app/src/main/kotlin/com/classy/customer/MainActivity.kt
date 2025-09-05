@@ -1,4 +1,4 @@
-package online.edentech.Classy
+package com.classy.customer
 
 import android.app.NotificationChannel
 import android.app.NotificationManager

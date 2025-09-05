@@ -62,13 +62,21 @@ class ForgotPasswordViewModel extends MyBaseViewModel {
           await _authRequest.verifyPhoneAccount(accountPhoneNumber!);
       if (apiResponse.allGood) {
         //
-        final phoneNumber = apiResponse.body["phone"];
-        accountPhoneNumber = phoneNumber;
-        setBusy(false);
-        if (!AppStrings.isCustomOtp) {
-          processFirebaseForgotPassword(phoneNumber);
+        final phoneNumber = apiResponse.body["phone"]?.toString() ?? "";
+        if (phoneNumber.isNotEmpty) {
+          accountPhoneNumber = phoneNumber;
+          setBusy(false);
+          if (!AppStrings.isCustomOtp) {
+            processFirebaseForgotPassword(phoneNumber);
+          } else {
+            processCustomForgotPassword(phoneNumber);
+          }
         } else {
-          processCustomForgotPassword(phoneNumber);
+          setBusy(false);
+          AlertService.error(
+            title: "Forgot Password".tr(),
+            text: "Invalid phone number format".tr(),
+          );
         }
       } else {
         setBusy(false);
@@ -281,5 +289,10 @@ class ForgotPasswordViewModel extends MyBaseViewModel {
         Navigator.of(viewContext).popUntil((route) => route.isFirst);
       },
     );
+  }
+
+  // Simplified method for the new UI
+  void sendResetCode() async {
+    processForgotPassword();
   }
 }
