@@ -5,6 +5,9 @@ composer.lock
 package-lock.json
 yarn.lock
 
+# Allow Apps/Vendor/ directory (Flutter app)
+!Apps/Vendor/
+
 # Environment files
 .env
 .env.local
