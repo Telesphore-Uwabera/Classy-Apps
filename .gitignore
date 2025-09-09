@@ -8,6 +8,13 @@ yarn.lock
 # Allow Apps/Vendor/ directory (Flutter app)
 !Apps/Vendor/
 
+# Allow important Flutter files
+!Apps/*/Frontend/pubspec.lock
+!Apps/*/Frontend/pubspec.yaml
+!Apps/*/Frontend/android/app/google-services.json
+!Apps/*/Frontend/ios/Runner/GoogleService-Info.plist
+!Apps/*/Frontend/lib/firebase_options.dart
+
 # Environment files
 .env
 .env.local
