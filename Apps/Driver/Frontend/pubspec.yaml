@@ -20,113 +20,65 @@ version: 1.7.72+84
 environment:
   sdk: ^3.7.2
 
+# Essential dependencies only - cleaned up for simplicity
 dependencies:
+  # Flutter Core
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.5
-  stacked: 3.4.0
-  velocity_x: ^4.3.1
-  shared_preferences: ^2.3.2
-  provider: ^6.1.1
-  adaptive_theme: ^3.7.0
-  args: ^2.3.0
-  awesome_notifications: ^0.10.1
-  basic_utils: ^5.8.2
-  bg_launcher: ^0.1.0
-  cached_network_image: ^3.3.1
-  circular_countdown_timer: ^0.2.0
-  colornames: ^0.1.0
-  contained_tab_bar_view: ^0.8.0
-  country_picker: ^2.0.26
-  currency_formatter: ^2.2.3
-  custom_faqs:
-    git:
-      url: https://github.com/ambrosethebuild/custom_faqs
-      ref: main
-  custom_sliding_segmented_control: ^1.7.5
-  dartx: ^1.2.0
-  device_info_plus: ^9.1.2
-  dio: ^5.8.0+1
-  dio_http_cache_lts: ^0.4.0
-  dotted_line: ^3.1.0
-  double_back_to_close: ^2.0.0
-  easy_refresh: ^3.4.0
-  eva_icons_flutter: ^3.1.0
-  file_picker: ^10.1.2
-  file_sizes: ^1.0.6
+  
+  # International phone number input
+  intl_phone_field: ^3.2.0
+  
+  # Firebase - Core Backend
+  firebase_core: ^3.5.0
   firebase_auth: ^5.3.0
-  firebase_crashlytics: ^4.1.2
+  cloud_firestore: ^5.4.2
   firebase_messaging: ^15.1.2
-  firestore_chat: ^0.1.2
-  flag: ^7.0.0
-  flutter_background: ^1.1.0
-  flutter_dropdown_alert: ^1.0.7
-  flutter_fgbg: ^0.7.1
-  flutter_form_builder: ^10.0.1
-  flutter_icons:
-    git:
-      url: https://github.com/imclerran/flutter-icons.git
-      ref: dart-3
-  flutter_image_compress: ^2.4.0
-  flutter_inappwebview: ^6.1.5
-  flutter_isolate: ^2.1.0
-  flutter_keyboard_visibility: ^6.0.0
-  flutter_localizations:
-    sdk: flutter
-  flutter_overboard: ^3.1.1
-  flutter_overlay_window: ^0.5.0
-  flutter_polyline_points: ^1.0.0
-  flutter_rating_bar: ^4.0.1
-  flutter_reverb: ^0.0.1
-  flutter_staggered_animations: ^1.0.0
+  firebase_crashlytics: ^4.1.2
+  
+  # State Management
+  stacked: ^3.4.0
+  provider: ^6.1.1
+  
+  # UI & Design
+  velocity_x: ^4.3.1
+  google_fonts: ^6.2.1
+  cached_network_image: ^3.3.1
   flutter_svg: ^2.0.9
-  flutter_typeahead: ^5.2.0
-  geoflutterfire2: ^2.3.14
-  geolocator: ^10.1.0
-  georange: ^1.0.0
-  google_fonts: 5.1.0
-  google_maps_flutter: ^2.12.1
+  
+  # Navigation & Routing
   google_nav_bar: ^5.0.3
-  hand_signature: ^3.0.3
-  hugeicons: ^0.0.11
-  image_picker: ^1.1.2
-  in_app_review: ^2.0.4
-  inspection: ^0.0.13
-  intl: ^0.17.0
-  jiffy: ^6.4.3
-  laravel_echo_null: ^0.1.1
-  lecho: ^0.0.1
-  line_icons: ^2.0.3
-  localize_and_translate: ^4.1.1
-  map_launcher: ^3.5.0
-  measure_size: ^4.0.0
-  open_file: ^3.5.10
-  package_info_plus: ^8.3.0
-  path_provider: ^2.1.5
-  pdf: ^3.11.3
+  
+  # Location & Maps (Critical for drivers)
+  geolocator: ^14.0.0
+  geocoding: ^3.0.0
+  google_maps_flutter: ^2.12.1
+  flutter_polyline_points: ^1.0.0
   permission_handler: ^12.0.0+1
-  pin_code_fields: ^8.0.1
-  pretty_dio_logger: ^1.1.1
-  pull_to_refresh_flutter3: ^2.0.2
-  pusher_channels_flutter: ^2.5.0
-  pusher_client_socket: ^0.0.5
-  qr_code_scanner_plus: ^2.0.10+1
-  quickalert: ^1.1.0
-  random_string: ^2.3.1
-  rolling_switch: ^0.0.2
-  rx_shared_preferences: ^3.0.0
-  rxdart: ^0.27.7
-  schedulers: ^1.0.1
-  simple_flutter_reverb: ^0.0.3
-  singleton: ^0.0.3-nullsafety
-  sliding_up_panel: ^2.0.0+1
-  smooth_page_indicator: ^1.0.0+2
-  socket_io_client: ^3.1.2
-  supercharged: ^2.1.1
-  syncfusion_flutter_datagrid: ^27.1.48
-  timelines_plus: ^1.0.4
-  upgrader: ^11.1.0
+  map_launcher: ^3.5.0
+  
+  # HTTP & Networking
+  dio: ^5.8.0+1
+  
+  # Utilities
+  shared_preferences: ^2.3.2
+  image_picker: ^1.1.2
   url_launcher: ^6.3.0
+  jiffy: ^6.4.3
+  intl: ^0.18.1
+  
+  # Notifications (Critical for order alerts)
+  awesome_notifications: ^0.10.1
+  
+  # Forms & Input
+  flutter_form_builder: ^10.0.1
+  
+  # Rating (for driver ratings)
+  flutter_rating_bar: ^4.0.1
+  
+  # Background services (for location tracking)
+  flutter_background: ^1.1.0
 
 dependency_overrides:
   archive: ^3.6.1

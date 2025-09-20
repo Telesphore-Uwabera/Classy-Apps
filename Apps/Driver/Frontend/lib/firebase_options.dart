@@ -33,13 +33,13 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyASmUafz431YLkL6d1tNL9qv5cuHC1TkDw',
-    appId: '1:156854442550:web:YOUR_WEB_APP_ID',
+    appId: '1:156854442550:web:f96d46d9f1c961983b9697',
     messagingSenderId: '156854442550',
     projectId: 'classyapp-unified-backend',
     authDomain: 'classyapp-unified-backend.firebaseapp.com',
     databaseURL: 'https://classyapp-unified-backend.firebaseio.com',
     storageBucket: 'classyapp-unified-backend.firebasestorage.app',
-    measurementId: 'YOUR_MEASUREMENT_ID',
+    measurementId: 'G-XXXXXXXXXX',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -70,7 +70,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyASmUafz431YLkL6d1tNL9qv5cuHC1TkDw',
-    appId: '1:156854442550:web:YOUR_WEB_APP_ID',
+    appId: '1:156854442550:web:f96d46d9f1c961983b9697',
     messagingSenderId: '156854442550',
     projectId: 'classyapp-unified-backend',
     authDomain: 'classyapp-unified-backend.firebaseapp.com',

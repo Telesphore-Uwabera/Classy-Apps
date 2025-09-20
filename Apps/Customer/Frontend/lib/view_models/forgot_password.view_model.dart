@@ -65,7 +65,7 @@ class ForgotPasswordViewModel extends MyBaseViewModel {
           await AuthRequest.verifyPhoneAccount(accountPhoneNumber!);
       if (apiResponse.allGood) {
         //
-        final phoneNumber = apiResponse.body["phone"]?.toString() ?? "";
+        final phoneNumber = apiResponse.body?["phone"]?.toString() ?? "";
         if (phoneNumber.isNotEmpty) {
           accountPhoneNumber = phoneNumber;
           if (!AppStrings.isCustomOtp) {

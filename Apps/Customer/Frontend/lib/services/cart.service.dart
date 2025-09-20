@@ -1,243 +1,128 @@
 import 'dart:async';
-import 'dart:convert';
-import 'package:dartx/dartx.dart';
-import 'package:Classy/constants/app_strings.dart';
 import 'package:Classy/models/cart.dart';
 import 'package:Classy/models/coupon.dart';
 import 'package:Classy/models/product.dart';
-import 'package:Classy/services/local_storage.service.dart';
-import 'package:rx_shared_preferences/rx_shared_preferences.dart';
+import 'package:Classy/services/firebase_cart.service.dart';
 
 class CartServices {
-  //
+  static final FirebaseCartService _firebaseService = FirebaseCartService();
+
+  // Legacy keys for backward compatibility
   static String cartItemsKey = "cart_items";
   static String totalItemKey = "total_cart_items";
-  static StreamController<int> cartItemsCountStream =
-      StreamController.broadcast();
-  //
+  static StreamController<int> cartItemsCountStream = StreamController.broadcast();
+  
+  // Cart items
   static List<Cart> productsInCart = [];
-  //
+
+  /// Initialize cart service
+  static void initialize() {
+    _firebaseService.initialize();
+    
+    // Connect Firebase streams to legacy streams
+    _firebaseService.cartStream.listen((cartItems) {
+      productsInCart = cartItems;
+      cartItemsCountStream.add(cartItems.length);
+    });
+  }
+
+  /// Get cart items
   static Future<void> getCartItems() async {
-    //
-    final cartList = await LocalStorageService.prefs!.getString(cartItemsKey);
-
-    //
-    if (cartList != null && cartList.isNotEmpty) {
-      try {
-        productsInCart =
-            (jsonDecode(cartList) as List).map((cartObject) {
-              return Cart.fromJson(cartObject);
-            }).toList();
-      } catch (error) {
-        productsInCart = [];
-      }
-    } else {
-      productsInCart = [];
-    }
-
-    //
+    await _firebaseService.getCartItems();
+    productsInCart = FirebaseCartService.productsInCart;
     cartItemsCountStream.add(productsInCart.length);
   }
 
-  //
+  /// Check if can add to cart
   static bool canAddToCart(Cart cart) {
-    if (productsInCart.length > 0) {
-      //
-      final firstOfferInCart = productsInCart[0];
-      if (firstOfferInCart.product?.vendorId == cart.product?.vendorId ||
-          AppStrings.enableMultipleVendorOrder) {
-        return true;
-      } else {
-        return false;
-      }
-    } else {
-      return true;
-    }
+    return _firebaseService.canAddToCart(cart);
   }
 
+  /// Check if can add digital product to cart
   static bool canAddDigitalProductToCart(Cart cart) {
-    if (productsInCart.length > 0) {
-      //
-      final allDigital = allCartProductsDigital();
-      if (allDigital) {
-        return true;
-      } else {
-        return false;
-      }
-    } else {
-      return true;
-    }
+    return _firebaseService.canAddDigitalProductToCart(cart);
   }
 
+  /// Check if all cart products are digital
   static bool allCartProductsDigital() {
-    if (productsInCart.length > 0) {
-      //
-      bool result = true;
-      for (var productInCart in productsInCart) {
-        if (!productInCart.product!.isDigital) {
-          result = false;
-          break;
-        }
-      }
-      return result;
-    } else {
-      return true;
-    }
+    return _firebaseService.allCartProductsDigital();
   }
 
-  static clearCart() async {
-    await LocalStorageService.prefs?.setString(cartItemsKey, "");
-    await updateTotalCartItemCount(0);
-    productsInCart = [];
-    await getCartItems();
+  /// Clear cart
+  static Future<void> clearCart() async {
+    await _firebaseService.clearCart();
+    productsInCart = FirebaseCartService.productsInCart;
+    cartItemsCountStream.add(productsInCart.length);
   }
 
-  static addToCart(Cart cart) async {
-    //
-    if (cart.selectedQty == null || cart.selectedQty == 0) {
-      cart.selectedQty = 1;
-    }
-    try {
-      final mProductsInCart = productsInCart;
-      mProductsInCart.add(cart);
-      await LocalStorageService.prefs!.setString(
-        cartItemsKey,
-        jsonEncode(mProductsInCart),
-      );
-      //
-      productsInCart = mProductsInCart;
-      //update total item in cart count
-      await updateTotalCartItemCount(productsInCart.length);
-      await getCartItems();
-    } catch (error) {
-      print("Saving Cart Error => $error");
-    }
+  /// Add to cart
+  static Future<void> addToCart(Cart cart) async {
+    await _firebaseService.addToCart(cart);
+    productsInCart = FirebaseCartService.productsInCart;
+    cartItemsCountStream.add(productsInCart.length);
   }
 
-  static saveCartItems(List<Cart> productsInCart) async {
-    await LocalStorageService.prefs?.setString(
-      cartItemsKey,
-      jsonEncode(productsInCart),
-    );
-
-    //update total item in cart count
-    await updateTotalCartItemCount(productsInCart.length);
-
-    await getCartItems();
+  /// Save cart items
+  static Future<void> saveCartItems(List<Cart> cartItems) async {
+    await _firebaseService.saveCartItems(cartItems);
+    productsInCart = FirebaseCartService.productsInCart;
+    cartItemsCountStream.add(productsInCart.length);
   }
 
-  static updateTotalCartItemCount(int total) async {
-    //update total item in cart count
-    await LocalStorageService.rxPrefs!.setInt(totalItemKey, total);
+  /// Update total cart item count
+  static Future<void> updateTotalCartItemCount(int total) async {
+    await _firebaseService.updateTotalCartItemCount(total);
   }
 
+  /// Check if multiple order
   static bool isMultipleOrder() {
-    final vendorIds =
-        CartServices.productsInCart
-            .map((e) => e.product?.vendorId)
-            .toList()
-            .toSet()
-            .toList();
-    return vendorIds.length > 1;
+    return _firebaseService.isMultipleOrder();
   }
 
+  /// Get vendor subtotal
   static double vendorSubTotal(int id) {
-    double subTotalPrice = 0.0;
-    CartServices.productsInCart.where((e) => e.product?.vendorId == id).forEach(
-      (cartItem) {
-        double totalProductPrice =
-            (cartItem.price ?? cartItem.product!.sellPrice);
-        totalProductPrice = totalProductPrice * cartItem.selectedQty!;
-        print("Vendor ==> ${cartItem.product?.vendor.name}");
-        print("Total Product Price => $totalProductPrice");
-        subTotalPrice += totalProductPrice;
-      },
-    );
-    return subTotalPrice;
+    return _firebaseService.vendorSubTotal(id);
   }
 
+  /// Get vendor order discount
   static double vendorOrderDiscount(int id, Coupon coupon) {
-    double discountCartPrice = 0.0;
-    final cartItems =
-        CartServices.productsInCart
-            .where((e) => e.product?.vendorId == id)
-            .toList();
-
-    cartItems.forEach((cartItem) {
-      //
-      final totalProductPrice =
-          (cartItem.price ?? cartItem.product!.price) * cartItem.selectedQty!;
-      //discount/coupon
-      final foundProduct = coupon.products.firstOrNullWhere(
-        (product) => cartItem.product?.id == product.id,
-      );
-      final foundVendor = coupon.vendors.firstOrNullWhere(
-        (vendor) => cartItem.product?.vendorId == vendor.id,
-      );
-      if (foundProduct != null ||
-          foundVendor != null ||
-          (coupon.products.isEmpty && coupon.vendors.isEmpty)) {
-        if (coupon.percentage == 1) {
-          discountCartPrice += (coupon.discount / 100) * totalProductPrice;
-        } else {
-          discountCartPrice += coupon.discount;
-        }
-      }
-    });
-    return discountCartPrice;
+    return _firebaseService.vendorOrderDiscount(id, coupon);
   }
 
-  //
+  /// Get multiple vendor order payload
   static List<Map> multipleVendorOrderPayload(int id) {
-    return CartServices.productsInCart
-        .where((e) => e.product?.vendorId == id)
-        .map((e) => e.toJson())
-        .toList();
+    return _firebaseService.multipleVendorOrderPayload(id);
   }
 
-  //new utils
+  /// Get product quantity in cart
   static Future<int> productQtyInCart(Product product) async {
-    int addedQty = 0;
-    //
-    await getCartItems();
-    (productsInCart.where((e) => e.product?.id == product.id).toList()).forEach(
-      (productInCart) {
-        //update product qty
-        int qty = productInCart.selectedQty!;
-        addedQty += qty;
-      },
-    );
-    return addedQty;
+    return await _firebaseService.productQtyInCart(product);
   }
 
+  /// Get product quantity allowed
   static Future<int> productQtyAllowed(Product product) async {
-    int addedQty = await productQtyInCart(product);
-    if (product.availableQty == null) {
-      return 20;
-    }
-    return (product.availableQty ?? 20) - addedQty;
+    return await _firebaseService.productQtyAllowed(product);
   }
 
+  /// Check if cart item quantity is available
   static Future<bool> cartItemQtyAvailable(Product product) async {
-    int addedQty = await productQtyInCart(product);
-    return product.availableQty == null || (addedQty < product.availableQty!);
+    return await _firebaseService.cartItemQtyAvailable(product);
   }
 
+  /// Get total subtotal
   static double get totalSubtotal {
-    double total = 0.0;
-    productsInCart.forEach((cartItem) {
-      double totalProductPrice =
-          (cartItem.price ?? cartItem.product!.sellPrice);
-      totalProductPrice = totalProductPrice * cartItem.selectedQty!;
-      total += totalProductPrice;
-    });
-    return total;
+    return _firebaseService.totalSubtotal;
   }
 
-  //
-  static refreshState() async {
-    await getCartItems();
-    int count = productsInCart.length;
-    updateTotalCartItemCount(count);
+  /// Refresh state
+  static Future<void> refreshState() async {
+    await _firebaseService.refreshState();
+    productsInCart = FirebaseCartService.productsInCart;
+    cartItemsCountStream.add(productsInCart.length);
+  }
+
+  /// Dispose resources
+  static void dispose() {
+    _firebaseService.dispose();
   }
 }

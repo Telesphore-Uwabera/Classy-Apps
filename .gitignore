@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-vendor/
 composer.lock
 package-lock.json
 yarn.lock
@@ -93,6 +92,26 @@ firebase-debug.*.log
 classy-1-1-firebase-adminsdk-*.json
 firebase-config/*.json
 
+# 🚨 CRITICAL: Firebase Configuration Files (CONTAIN API KEYS!)
+# Android Firebase configs
+Apps/*/Frontend/android/app/google-services.json
+**/google-services.json
+
+# iOS Firebase configs  
+Apps/*/Frontend/ios/Runner/GoogleService-Info.plist
+**/GoogleService-Info.plist
+
+# Keystore files (NEVER commit these!)
+*.jks
+*.keystore
+Apps/*/Frontend/keystore.jks
+Apps/*/Frontend/*.keystore
+
+# Android signing configs
+Apps/*/Frontend/android/key.properties
+Apps/*/Frontend/android/keystore.properties
+Apps/*/Frontend/android/app/keystore.properties
+
 # Temporary files
 *.tmp
 *.temp
@@ -115,7 +134,6 @@ cache/
 
 # Build outputs
 dist/
-build/
 out/
 
 # Test coverage
@@ -125,3 +143,46 @@ coverage/
 # Local configuration
 config.local.*
 settings.local.*
+
+# 🔐 SECURITY: Additional sensitive files
+# API Keys and secrets in any format
+**/apikeys.json
+**/secrets.json
+**/credentials.json
+**/*-credentials.json
+**/*-config.json
+**/*-keys.json
+
+# Service account keys
+**/service-account-*.json
+**/serviceAccountKey.json
+
+# Environment and config files
+**/.env*
+**/config.env
+**/secrets.env
+**/*.env.local
+**/*.env.production
+**/*.env.staging
+
+# License and private files
+**/*.license
+**/PRIVATE_*
+**/SECRET_*
+
+# Temporary sensitive files
+**/temp-config.*
+**/backup-config.*
+
+# Node.js API specific
+classy-api/.env*
+classy-api/config/*
+classy-api/secrets/*
+
+# Admin app environment
+Apps/Admin/.env*
+Apps/Admin/src/config/firebase-config.json
+
+# Flutter app secrets
+Apps/*/Frontend/lib/secrets/*
+Apps/*/Frontend/assets/secrets/*

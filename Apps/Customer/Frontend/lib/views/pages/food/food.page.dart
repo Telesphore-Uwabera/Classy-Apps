@@ -188,7 +188,7 @@ class _FoodPageState extends State<FoodPage> {
               final result = await Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => PlacePicker(
-                    apiKey: "AIzaSyDUZsmIAdmseLvCaQhyZlGHr6YU6HGITJk",
+                    apiKey: AppStrings.googleMapApiKey, // Use centralized API key
                     onPlacePicked: (result) {
                       LocationService.setCurrentLocation(result.formattedAddress ?? "Selected Location");
                       Navigator.of(context).pop();

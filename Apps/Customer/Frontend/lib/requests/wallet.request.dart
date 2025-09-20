@@ -7,14 +7,12 @@ import 'package:Classy/services/http.service.dart';
 class WalletRequest extends HttpService {
   //
   Future<Wallet> walletBalance() async {
-    final apiResult = await get(Api.walletBalance);
-    final apiResponse = ApiResponse.fromResponse(apiResult);
-    
-    if (apiResponse.allGood) {
-      return Wallet.fromJson(apiResponse.body);
-    }
-    
-    throw apiResponse.message ?? "Failed to get wallet balance";
+    // For Firebase-only mode, return mock wallet data
+    // TODO: Implement Firebase-based wallet functionality
+    return Wallet(
+      balance: 0.0,
+      updatedAt: DateTime.now(),
+    );
   }
 
   Future<dynamic> walletTopup(String amount, {int? paymentMethodId}) async {

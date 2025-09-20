@@ -30,7 +30,6 @@ import 'package:Classy/views/pages/product/product_details.page.dart';
 import 'package:Classy/views/pages/profile/edit_profile.page.dart';
 import 'package:Classy/views/pages/search/search.page.dart';
 import 'package:Classy/views/pages/wallet/wallet.page.dart';
-import 'package:Classy/views/shared/location_fetch.page.dart';
 import 'package:Classy/views/pages/settings.page.dart';
 import 'package:Classy/views/pages/help_support.page.dart';
 import 'package:Classy/views/pages/privacy_policy.page.dart';
@@ -40,11 +39,11 @@ import 'package:Classy/views/pages/food/food.page.dart';
 import 'package:Classy/views/pages/food/order_confirmation.page.dart';
 import 'package:Classy/views/pages/boda/boda.page.dart';
 import 'package:Classy/views/pages/ride_history.page.dart';
-import 'package:Classy/models/payment_method.dart';
 import 'package:Classy/models/vendor_type.dart';
 import 'package:Classy/views/pages/payment_methods.page.dart';
 import 'package:Classy/views/pages/location/work_location.page.dart';
 import 'package:Classy/views/pages/location/home_location.page.dart';
+import 'package:Classy/views/pages/debug/auth_test.page.dart';
 
 Route<dynamic> generateRoute(RouteSettings settings) {
   switch (settings.name) {
@@ -316,6 +315,11 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     case AppRoutes.homeLocationRoute:
       return MaterialPageRoute(
         builder: (context) => HomeLocationPage(),
+      );
+
+    case AppRoutes.authTestRoute:
+      return MaterialPageRoute(
+        builder: (context) => AuthTestPage(),
       );
 
     default:

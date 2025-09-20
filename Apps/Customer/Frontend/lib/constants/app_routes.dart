@@ -56,4 +56,8 @@ class AppRoutes {
   // Location management routes
   static const workLocationRoute = "work_location";
   static const homeLocationRoute = "home_location";
+  
+  // Debug routes
+  static const firestoreDebugRoute = "firestore_debug";
+  static const authTestRoute = "auth_test";
 }

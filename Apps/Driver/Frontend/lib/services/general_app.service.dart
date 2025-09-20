@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:fuodz/firebase_options.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:fuodz/services/firebase.service.dart';
 
@@ -13,7 +14,9 @@ class GeneralAppService {
   ) async {
     //if it has not data then it is a normal notification, so ignore it
     if (remoteMessage.data.isEmpty) return;
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     await FirebaseService.instance.saveNewNotification(remoteMessage);
     //normal notifications
     FirebaseService.instance.showNotification(remoteMessage);

@@ -1,6 +1,7 @@
 // Firebase-compatible request handler for all missing endpoints
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Classy/models/api_response.dart';
+import 'package:Classy/services/auth.service.dart';
 
 class FirebaseRequest {
   static FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -8,85 +9,185 @@ class FirebaseRequest {
   // Generic method to handle all missing API endpoints
   static Future<ApiResponse> handleRequest(String endpoint, {Map<String, dynamic>? data}) async {
     try {
-      // For now, return mock data for all endpoints
-      // In a real implementation, these would be replaced with actual Firestore queries
+      // Get current user ID for user-specific queries
+      final currentUser = AuthServices.currentUser;
+      final userId = currentUser?.id?.toString();
       
       switch (endpoint) {
         case 'orders':
+          if (userId == null) {
+            return ApiResponse(code: 401, message: "User not authenticated");
+          }
+          final snapshot = await _firestore
+              .collection('orders')
+              .where('customer_id', isEqualTo: userId)
+              .orderBy('created_at', descending: true)
+              .limit(50)
+              .get();
+          final orders = snapshot.docs.map((doc) => doc.data()).toList();
           return ApiResponse(
             code: 200,
             message: "Orders loaded",
-            body: [],
+            body: orders,
           );
           
         case 'products':
+          final snapshot = await _firestore
+              .collection('products')
+              .where('status', isEqualTo: 'active')
+              .orderBy('created_at', descending: true)
+              .limit(50)
+              .get();
+          final products = snapshot.docs.map((doc) => doc.data()).toList();
           return ApiResponse(
             code: 200,
             message: "Products loaded",
-            body: [],
+            body: products,
           );
           
         case 'vendors':
+          final snapshot = await _firestore
+              .collection('vendors')
+              .where('status', isEqualTo: 'active')
+              .orderBy('rating', descending: true)
+              .limit(50)
+              .get();
+          final vendors = snapshot.docs.map((doc) => doc.data()).toList();
           return ApiResponse(
             code: 200,
             message: "Vendors loaded",
-            body: [],
+            body: vendors,
           );
           
         case 'categories':
+          final snapshot = await _firestore
+              .collection('categories')
+              .where('is_active', isEqualTo: true)
+              .orderBy('sort_order')
+              .get();
+          final categories = snapshot.docs.map((doc) => doc.data()).toList();
           return ApiResponse(
             code: 200,
             message: "Categories loaded",
-            body: [],
+            body: categories,
           );
           
         case 'services':
+          final snapshot = await _firestore
+              .collection('services')
+              .where('status', isEqualTo: 'active')
+              .orderBy('created_at', descending: true)
+              .limit(50)
+              .get();
+          final services = snapshot.docs.map((doc) => doc.data()).toList();
           return ApiResponse(
             code: 200,
             message: "Services loaded",
-            body: [],
+            body: services,
           );
           
         case 'cart':
+          if (userId == null) {
+            return ApiResponse(code: 401, message: "User not authenticated");
+          }
+          final snapshot = await _firestore
+              .collection('carts')
+              .where('user_id', isEqualTo: userId)
+              .where('status', isEqualTo: 'active')
+              .get();
+          final cartItems = snapshot.docs.map((doc) => doc.data()).toList();
           return ApiResponse(
             code: 200,
             message: "Cart loaded",
-            body: [],
+            body: cartItems,
           );
           
         case 'paymentMethods':
+          final snapshot = await _firestore
+              .collection('payment_methods')
+              .where('is_active', isEqualTo: true)
+              .orderBy('sort_order')
+              .get();
+          final paymentMethods = snapshot.docs.map((doc) => doc.data()).toList();
           return ApiResponse(
             code: 200,
             message: "Payment methods loaded",
-            body: [],
+            body: paymentMethods,
           );
           
         case 'coupons':
+          final snapshot = await _firestore
+              .collection('coupons')
+              .where('is_active', isEqualTo: true)
+              .where('expires_at', isGreaterThan: DateTime.now().toIso8601String())
+              .orderBy('expires_at')
+              .limit(20)
+              .get();
+          final coupons = snapshot.docs.map((doc) => doc.data()).toList();
           return ApiResponse(
             code: 200,
             message: "Coupons loaded",
-            body: [],
+            body: coupons,
           );
           
         case 'banners':
+          final snapshot = await _firestore
+              .collection('banners')
+              .where('is_active', isEqualTo: true)
+              .orderBy('sort_order')
+              .limit(10)
+              .get();
+          final banners = snapshot.docs.map((doc) => doc.data()).toList();
           return ApiResponse(
             code: 200,
             message: "Banners loaded",
-            body: [],
+            body: banners,
           );
           
         case 'favourites':
+          if (userId == null) {
+            return ApiResponse(code: 401, message: "User not authenticated");
+          }
+          final snapshot = await _firestore
+              .collection('favorites')
+              .where('user_id', isEqualTo: userId)
+              .orderBy('created_at', descending: true)
+              .limit(50)
+              .get();
+          final favourites = snapshot.docs.map((doc) => doc.data()).toList();
           return ApiResponse(
             code: 200,
             message: "Favourites loaded",
-            body: [],
+            body: favourites,
           );
           
         case 'search':
+          final query = data?['query'] ?? '';
+          if (query.isEmpty) {
+            return ApiResponse(code: 400, message: "Search query is required");
+          }
+          
+          // Search in products
+          final productsSnapshot = await _firestore
+              .collection('products')
+              .where('status', isEqualTo: 'active')
+              .limit(20)
+              .get();
+          
+          final products = productsSnapshot.docs
+              .map((doc) => doc.data())
+              .where((product) {
+                final name = product['name']?.toString().toLowerCase() ?? '';
+                final description = product['description']?.toString().toLowerCase() ?? '';
+                final searchQuery = query.toLowerCase();
+                return name.contains(searchQuery) || description.contains(searchQuery);
+              })
+              .toList();
+          
           return ApiResponse(
             code: 200,
             message: "Search results loaded",
-            body: [],
+            body: products,
           );
           
         case 'tags':
@@ -146,10 +247,20 @@ class FirebaseRequest {
           );
           
         case 'notifications':
+          if (userId == null) {
+            return ApiResponse(code: 401, message: "User not authenticated");
+          }
+          final snapshot = await _firestore
+              .collection('notifications')
+              .where('user_id', isEqualTo: userId)
+              .orderBy('created_at', descending: true)
+              .limit(50)
+              .get();
+          final notifications = snapshot.docs.map((doc) => doc.data()).toList();
           return ApiResponse(
             code: 200,
             message: "Notifications loaded",
-            body: [],
+            body: notifications,
           );
           
         case 'chat':
@@ -258,17 +369,68 @@ class FirebaseRequest {
           );
           
         case 'placeOrder':
+          if (userId == null) {
+            return ApiResponse(code: 401, message: "User not authenticated");
+          }
+          if (data == null) {
+            return ApiResponse(code: 400, message: "Order data is required");
+          }
+          
+          final orderRef = _firestore.collection('orders').doc();
+          final orderData = {
+            'id': orderRef.id,
+            'customer_id': userId,
+            'order_number': 'ORD-${DateTime.now().millisecondsSinceEpoch}',
+            'status': 'pending',
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+            ...data,
+          };
+          
+          await orderRef.set(orderData);
           return ApiResponse(
             code: 200,
-            message: "Order placed",
-            body: [],
+            message: "Order placed successfully",
+            body: orderData,
+          );
+          
+        case 'addToCart':
+          if (userId == null) {
+            return ApiResponse(code: 401, message: "User not authenticated");
+          }
+          if (data == null) {
+            return ApiResponse(code: 400, message: "Cart item data is required");
+          }
+          
+          final cartRef = _firestore.collection('carts').doc();
+          final cartData = {
+            'id': cartRef.id,
+            'user_id': userId,
+            'status': 'active',
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+            ...data,
+          };
+          
+          await cartRef.set(cartData);
+          return ApiResponse(
+            code: 200,
+            message: "Item added to cart",
+            body: cartData,
           );
           
         case 'bestProducts':
+          final snapshot = await _firestore
+              .collection('products')
+              .where('status', isEqualTo: 'active')
+              .orderBy('rating', descending: true)
+              .limit(20)
+              .get();
+          final products = snapshot.docs.map((doc) => doc.data()).toList();
           return ApiResponse(
             code: 200,
             message: "Best products loaded",
-            body: [],
+            body: products,
           );
           
         case 'forYouProducts':

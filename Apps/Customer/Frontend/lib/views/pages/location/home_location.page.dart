@@ -12,7 +12,7 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:Classy/services/location.service.dart';
-import 'package:Classy/services/web_location.service.dart';
+import 'package:Classy/services/location_bridge.dart';
 import 'package:Classy/widgets/location_permission_helper.dart';
 
 class HomeLocationPage extends StatefulWidget {
@@ -102,7 +102,7 @@ class _HomeLocationPageState extends State<HomeLocationPage> {
       final result = await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => PlacePicker(
-            apiKey: "AIzaSyDUZsmIAdmseLvCaQhyZlGHr6YU6HGITJk",
+            apiKey: AppStrings.googleMapApiKey, // Use centralized API key
             onPlacePicked: (result) {
               _homeAddressController.text = result.formattedAddress ?? "Selected Address";
               Navigator.of(context).pop();

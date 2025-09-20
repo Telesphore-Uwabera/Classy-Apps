@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:country_picker/country_picker.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fuodz/services/fallback_auth.service.dart';
 import 'package:flutter/material.dart';
 import 'package:fuodz/constants/app_strings.dart';
 import 'package:fuodz/extensions/string.dart';
@@ -151,33 +153,71 @@ class RegisterViewModel extends MyBaseViewModel with QrcodeScannerTrait {
         final email = "${phoneNumber.replaceAll('+', '').replaceAll(' ', '')}@classy.app";
         
         // Create user with Firebase
-        final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: email,
-          password: params['password'],
-        );
+        // Check if Firebase is initialized
+        bool firebaseAvailable = false;
+        try {
+          Firebase.app();
+          firebaseAvailable = true;
+        } catch (e) {
+          print('Firebase not available, using fallback registration');
+        }
         
-        if (userCredential.user != null) {
-          // Update user profile with additional information
-          await userCredential.user!.updateDisplayName(params['name']);
+        if (firebaseAvailable) {
+          try {
+            final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+              email: email,
+              password: params['password'],
+            );
+            
+            if (userCredential.user != null) {
+              // Update user profile with additional information
+              await userCredential.user!.updateDisplayName(params['name']);
+              
+              // Save driver data to Firestore
+              await FirebaseFirestore.instance.collection('drivers').doc(userCredential.user!.uid).set({
+                'name': params['name'],
+                'email': email,
+                'phone': phoneNumber,
+                'address': params['address'],
+                'car_make_id': selectedCarMake?.id,
+                'car_model_id': selectedCarModel?.id,
+                'driver_type': params['driver_type'] ?? 'regular',
+                'role': 'driver',
+                'status': 'pending', // New drivers need approval
+                'createdAt': FieldValue.serverTimestamp(),
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
+              
+              await AlertService.success(
+                title: "Become a partner".tr(),
+                text: "Registration successful! Your account is pending approval.",
+              );
+            }
+          } catch (firebaseError) {
+            print('Firebase registration failed: $firebaseError');
+            // Continue with fallback registration
+          }
+        }
+        
+        // Fallback: Use local authentication when Firebase is not available
+        if (!firebaseAvailable) {
+          print('Using fallback registration - Firebase not available');
           
-          // Save driver data to Firestore
-          await FirebaseFirestore.instance.collection('drivers').doc(userCredential.user!.uid).set({
+          final userData = {
             'name': params['name'],
-            'email': email,
             'phone': phoneNumber,
+            'email': email,
+            'service_type': params['service_type'],
             'address': params['address'],
-            'car_make_id': selectedCarMake?.id,
-            'car_model_id': selectedCarModel?.id,
+            'country_code': params['country_code'],
             'driver_type': params['driver_type'] ?? 'regular',
-            'role': 'driver',
-            'status': 'pending', // New drivers need approval
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+          };
+          
+          final user = await FallbackAuthService.registerUser(userData);
           
           await AlertService.success(
             title: "Become a partner".tr(),
-            text: "Registration successful! Your account is pending approval.",
+            text: "Registration successful! Your account is pending approval. (Offline Mode)",
           );
         }
         

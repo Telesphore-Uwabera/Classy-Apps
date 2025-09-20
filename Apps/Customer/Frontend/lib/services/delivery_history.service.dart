@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:Classy/services/location.service.dart';
 import 'package:Classy/services/http.service.dart';
 import 'package:Classy/constants/api.dart';
 import 'package:Classy/models/api_response.dart';

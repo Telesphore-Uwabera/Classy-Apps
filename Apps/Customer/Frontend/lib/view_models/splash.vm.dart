@@ -185,7 +185,7 @@ class SplashViewModel extends MyBaseViewModel {
     }
     //
     // After splash → go to Login when not authenticated; else Home
-    if (await AuthServices.authenticated()) {
+    if (AuthServices.authenticated()) {
       Navigator.of(viewContext).pushNamedAndRemoveUntil(
         AppRoutes.homeRoute,
         (Route<dynamic> route) => false,

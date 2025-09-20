@@ -28,7 +28,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:Classy/services/web_location.service.dart';
+import 'package:Classy/services/location_bridge.dart';
 import 'package:Classy/requests/wallet.request.dart';
 import 'package:Classy/models/wallet.dart';
 
@@ -107,21 +107,27 @@ class _CustomerHomeState extends State<_CustomerHome> {
 
   Future<void> _fetchWalletBalance() async {
     try {
-      setState(() {
-        isLoadingWallet = true;
-      });
+      if (mounted) {
+        setState(() {
+          isLoadingWallet = true;
+        });
+      }
       
       final wallet = await _walletRequest.walletBalance();
-      setState(() {
-        walletBalance = wallet.balance ?? 0.0;
-        isLoadingWallet = false;
-      });
+      if (mounted) {
+        setState(() {
+          walletBalance = wallet.balance ?? 0.0;
+          isLoadingWallet = false;
+        });
+      }
     } catch (e) {
       print('Error fetching wallet balance: $e');
-      setState(() {
-        walletBalance = 0.0;
-        isLoadingWallet = false;
-      });
+      if (mounted) {
+        setState(() {
+          walletBalance = 0.0;
+          isLoadingWallet = false;
+        });
+      }
     }
   }
 
@@ -193,20 +199,24 @@ class _CustomerHomeState extends State<_CustomerHome> {
         // First check if location service is enabled
         final isEnabled = await WebLocationService.isLocationServiceEnabled();
         if (!isEnabled) {
-          setState(() {
-            locationText = "Location services disabled";
-            isLoadingLocation = false;
-          });
+          if (mounted) {
+            setState(() {
+              locationText = "Location services disabled";
+              isLoadingLocation = false;
+            });
+          }
           return;
         }
 
         // Request permission if needed
         final hasPermission = await WebLocationService.requestLocationPermission();
         if (!hasPermission) {
-          setState(() {
-            locationText = "Location permission denied";
-            isLoadingLocation = false;
-          });
+          if (mounted) {
+            setState(() {
+              locationText = "Location permission denied";
+              isLoadingLocation = false;
+            });
+          }
           return;
         }
 
@@ -216,45 +226,55 @@ class _CustomerHomeState extends State<_CustomerHome> {
         );
         
         if (address != null && address.isNotEmpty) {
-          setState(() {
-            locationText = address;
-            isLoadingLocation = false;
-          });
+          if (mounted) {
+            setState(() {
+              locationText = address;
+              isLoadingLocation = false;
+            });
+          }
           // Save the location
           await _saveLocation(address);
         } else {
-          setState(() {
-            locationText = "Tap to set location";
-            isLoadingLocation = false;
-          });
+          if (mounted) {
+            setState(() {
+              locationText = "Tap to set location";
+              isLoadingLocation = false;
+            });
+          }
         }
       } else {
         // For mobile, use the existing location service
         await LocationService.prepareLocationListener(true);
-      await Future.delayed(Duration(seconds: 2));
-      
-      final address = LocationService.currenctAddress;
-      if (address != null) {
+        await Future.delayed(Duration(seconds: 2));
+        
+        final address = LocationService.currenctAddress;
+        if (address != null) {
           final addressText = address.addressLine ?? address.featureName ?? "Current Location";
-        setState(() {
-            locationText = addressText;
-          isLoadingLocation = false;
-        });
+          if (mounted) {
+            setState(() {
+              locationText = addressText;
+              isLoadingLocation = false;
+            });
+          }
           // Save the location
           await _saveLocation(addressText);
-      } else {
-        setState(() {
-          locationText = "Location not available";
-          isLoadingLocation = false;
-        });
+        } else {
+          if (mounted) {
+            setState(() {
+              locationText = "Location not available";
+              isLoadingLocation = false;
+            });
+          }
         }
       }
     } catch (e) {
       print('Location fetch error: $e');
-      setState(() {
-        locationText = "Tap to set location";
-        isLoadingLocation = false;
-      });
+      if (mounted) {
+        setState(() {
+          locationText = "Tap to set location";
+          isLoadingLocation = false;
+        });
+      }
     }
   }
 

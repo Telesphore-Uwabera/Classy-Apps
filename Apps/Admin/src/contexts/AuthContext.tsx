@@ -1,10 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { AdminAuthService, AdminUser } from '../services/firebase'
+import { User as FirebaseUser } from 'firebase/auth'
 
 interface User {
   id: string
   name: string
   email: string
   role: string
+  permissions?: string[]
 }
 
 interface AuthContextType {
@@ -22,37 +25,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check if user is logged in on app start
-    const savedUser = localStorage.getItem('admin_user')
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
-    }
-    setLoading(false)
+    // Listen to Firebase auth state changes
+    const unsubscribe = AdminAuthService.onAuthStateChanged(async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        try {
+          // Get admin profile from Firestore
+          const adminUser = await AdminAuthService.login(firebaseUser.email!, '');
+          setUser({
+            id: adminUser.uid,
+            name: adminUser.name,
+            email: adminUser.email,
+            role: adminUser.role,
+            permissions: adminUser.permissions
+          });
+        } catch (error) {
+          console.error('Error getting admin profile:', error);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [])
 
   const login = async (email: string, password: string) => {
     try {
-      // Mock login - replace with actual API call
-      if (email === 'admin@classy.com' && password === 'admin123') {
-        const userData = {
-          id: '1',
-          name: 'Admin User',
-          email: 'admin@classy.com',
-          role: 'admin'
-        }
-        setUser(userData)
-        localStorage.setItem('admin_user', JSON.stringify(userData))
-      } else {
-        throw new Error('Invalid credentials')
-      }
-    } catch (error) {
-      throw error
+      setLoading(true);
+      const adminUser = await AdminAuthService.login(email, password);
+      
+      const userData = {
+        id: adminUser.uid,
+        name: adminUser.name,
+        email: adminUser.email,
+        role: adminUser.role,
+        permissions: adminUser.permissions
+      };
+      
+      setUser(userData);
+      localStorage.setItem('admin_user', JSON.stringify(userData));
+    } catch (error: any) {
+      console.error('Login error:', error);
+      throw new Error(error.message || 'Login failed');
+    } finally {
+      setLoading(false);
     }
   }
 
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem('admin_user')
+  const logout = async () => {
+    try {
+      await AdminAuthService.logout();
+      setUser(null);
+      localStorage.removeItem('admin_user');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Clear local state even if Firebase logout fails
+      setUser(null);
+      localStorage.removeItem('admin_user');
+    }
   }
 
   const value = {

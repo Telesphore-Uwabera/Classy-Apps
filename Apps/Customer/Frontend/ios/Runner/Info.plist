@@ -27,8 +27,7 @@
 				<string>Editor</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
-					<string>com.googleusercontent.apps.977502122572-quk6jf1tlfjsqpbo6784nqc43n11ptbo</string>
-					<string>fb1866950493512266</string>
+					<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 				</array>
 			</dict>
 			<dict>
@@ -42,12 +41,6 @@
 		</array>
 		<key>CFBundleVersion</key>
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
-		<key>FacebookAppID</key>
-		<string>1866950493512266</string>
-		<key>FacebookClientToken</key>
-		<string>2c8423c28ff94421ac6a86a5956449af</string>
-		<key>FacebookDisplayName</key>
-		<string>Classy</string>
 		<key>LSApplicationQueriesSchemes</key>
 		<array>
 			<string>comgooglemaps</string>
@@ -65,21 +58,6 @@
 			<string>http</string>
 			<string>tel</string>
 			<string>mailto</string>
-			<string>fbapi</string>
-			<string>fbapi20130214</string>
-			<string>fbapi20130410</string>
-			<string>fbapi20130702</string>
-			<string>fbapi20131010</string>
-			<string>fbapi20131219</string>
-			<string>fbapi20140410</string>
-			<string>fbapi20140116</string>
-			<string>fbapi20150313</string>
-			<string>fbapi20150629</string>
-			<string>fbapi20160328</string>
-			<string>fbauth</string>
-			<string>fb-messenger-share-api</string>
-			<string>fbauth2</string>
-			<string>fbshareextension</string>
 		</array>
 		<key>LSRequiresIPhoneOS</key>
 		<true/>

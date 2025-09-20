@@ -194,48 +194,9 @@ class AuthRequest {
     }
   }
 
-  // ===== MOCK METHODS FOR COMPATIBILITY =====
-  // These methods are kept for compatibility but return mock data
-  
-  static Future<ApiResponse> qrLoginRequest(Map<String, dynamic> data) async {
-    return ApiResponse(code: 501, message: "QR login not implemented");
-  }
-  
-  static Future<ApiResponse> verifyPhoneAccountRequest(Map<String, dynamic> data) async {
-    return ApiResponse(code: 501, message: "Phone verification not implemented");
-  }
-  
-  static Future<ApiResponse> verifyPhoneAccount(String phone) async {
-    return verifyPhoneAccountRequest({'phone': phone});
-  }
-  
-  static Future<ApiResponse> sendOtpRequest(Map<String, dynamic> data) async {
-    return ApiResponse(code: 501, message: "OTP not implemented");
-  }
-  
-  static Future<ApiResponse> sendOTP(String phone) async {
-    return sendOtpRequest({'phone': phone});
-  }
-  
-  static Future<ApiResponse> verifyOtpRequest(Map<String, dynamic> data) async {
-    return ApiResponse(code: 501, message: "OTP not implemented");
-  }
-  
-  static Future<ApiResponse> verifyOTP(Map<String, dynamic> data) async {
-    return verifyOtpRequest(data);
-  }
-  
-  static Future<ApiResponse> verifyFirebaseOtpRequest(Map<String, dynamic> data) async {
-    return ApiResponse(code: 501, message: "Firebase OTP not implemented");
-  }
-  
-  static Future<ApiResponse> socialLoginRequest(Map<String, dynamic> data) async {
-    return ApiResponse(code: 501, message: "Social login not implemented");
-  }
-  
-  static Future<ApiResponse> socialLogin(Map<String, dynamic> data) async {
-    return socialLoginRequest(data);
-  }
+  // ===== REMOVED COMPLEX AUTH METHODS =====
+  // QR login, OTP verification, and social logins removed for simplicity
+  // Only phone/password authentication is supported
   
   static Future<ApiResponse> tokenSyncRequest(Map<String, dynamic> data) async {
     return ApiResponse(code: 200, message: "Token sync not needed with Firebase");

@@ -29,7 +29,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:Classy/services/web_location.service.dart';
+import 'package:Classy/services/location_bridge.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({Key? key}) : super(key: key);
@@ -637,7 +637,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       final result = await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => PlacePicker(
-            apiKey: "AIzaSyDUZsmIAdmseLvCaQhyZlGHr6YU6HGITJk", // Google Maps API key
+            apiKey: AppStrings.googleMapApiKey, // Use centralized API key
             onPlacePicked: (result) {
               final addressText = result.formattedAddress ?? "Selected Location";
               

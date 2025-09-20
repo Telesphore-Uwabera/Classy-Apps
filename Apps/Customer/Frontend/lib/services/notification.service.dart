@@ -1,6 +1,7 @@
 import 'package:Classy/models/api_response.dart';
 import 'package:Classy/models/app_notification.dart';
 import 'package:Classy/services/auth.service.dart';
+import 'package:Classy/services/firebase_notification.service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
@@ -12,6 +13,9 @@ class NotificationService {
 
   // Base URL for notification endpoints
   static const String _baseUrl = 'http://localhost:8000/api/notifications';
+
+  // Firebase notification service
+  final FirebaseNotificationService _firebaseService = FirebaseNotificationService();
 
   // Stream controllers for real-time notifications
   final StreamController<List<AppNotification>> _notificationsController = StreamController<List<AppNotification>>.broadcast();
@@ -32,7 +36,25 @@ class NotificationService {
 
   /// Initialize notification service
   void initialize() {
-    // Start periodic updates
+    // Initialize Firebase service
+    _firebaseService.initialize();
+    
+    // Connect Firebase streams to local streams
+    _firebaseService.notificationsStream.listen((notifications) {
+      _cachedNotifications = notifications;
+      _notificationsController.add(notifications);
+    });
+    
+    _firebaseService.unreadCountStream.listen((count) {
+      _cachedUnreadCount = count;
+      _unreadCountController.add(count);
+    });
+    
+    _firebaseService.newNotificationStream.listen((notification) {
+      _newNotificationController.add(notification);
+    });
+    
+    // Start periodic updates as fallback
     _startPeriodicUpdates();
     
     // Load initial data
@@ -64,6 +86,19 @@ class NotificationService {
     bool unreadOnly = false,
   }) async {
     try {
+      // Try Firebase first
+      final firebaseResponse = await _firebaseService.getNotifications(
+        limit: limit,
+        offset: offset,
+        type: type,
+        unreadOnly: unreadOnly,
+      );
+      
+      if (firebaseResponse.code == 200) {
+        return firebaseResponse;
+      }
+      
+      // Fallback to HTTP API
       final token = await AuthServices.getAuthBearerToken();
       
       final queryParams = <String, String>{
@@ -158,6 +193,13 @@ class NotificationService {
   /// Mark notification as read
   Future<ApiResponse> markAsRead(int notificationId) async {
     try {
+      // Try Firebase first
+      final firebaseResponse = await _firebaseService.markAsRead(notificationId);
+      if (firebaseResponse.code == 200) {
+        return firebaseResponse;
+      }
+      
+      // Fallback to HTTP API
       final token = await AuthServices.getAuthBearerToken();
       
       final response = await http.patch(

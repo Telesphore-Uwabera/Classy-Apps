@@ -7,7 +7,9 @@ class AppStrings {
   //
   static String get appName => env('app_name');
   static String get companyName => env('company_name');
-  static String get googleMapApiKey => "AIzaSyDUZsmIAdmseLvCaQhyZlGHr6YU6HGITJk";
+  // 🔐 SECURITY: Google Maps API key should be stored securely
+  // For production, use --dart-define or environment variables
+  static String get googleMapApiKey => const String.fromEnvironment('GOOGLE_MAPS_API_KEY', defaultValue: 'your-google-maps-api-key-here');
   static String get fcmApiKey => env('fcm_key');
   static String get currencySymbol => env('currency');
   static String get countryCode => env('country_code');
@@ -22,9 +24,9 @@ class AppStrings {
   static bool get enableSingleVendor => env('enableSingleVendor') == "1";
   static bool get enableMultipleVendorOrder =>
       env('enableMultipleVendorOrder') ?? false;
-  static bool get enableReferSystem => env('enableReferSystem') == "1";
-  static String get referAmount => env('referAmount');
-  static bool get enableChat => env('enableChat') == "1";
+  static bool get enableReferSystem => false; // Simplified - no referral system
+  static String get referAmount => "0"; // Removed referral complexity
+  static bool get enableChat => false; // Simplified - basic notifications only
   static bool get enableOrderTracking => env('enableOrderTracking') == "1";
   static bool get enableFatchByLocation => env('enableFatchByLocation') ?? true;
   static bool get showVendorTypeImageOnly =>
@@ -64,11 +66,8 @@ class AppStrings {
 
   static String get emergencyContact => env('emergencyContact') ?? "911";
 
-  //Social media logins
-  static bool get googleLogin => env('auth')['googleLogin'] ?? false;
-  static bool get appleLogin => env('auth')['appleLogin'] ?? false;
-  static bool get facebbokLogin => env('auth')['facebbokLogin'] ?? false;
-  static bool get qrcodeLogin => env('auth')['qrcodeLogin'] ?? false;
+  //Simplified authentication - only phone/password
+  static bool get qrcodeLogin => false; // Removed QR login complexity
 
   //UI Configures
   static dynamic get uiConfig {
@@ -232,11 +231,11 @@ class AppStrings {
       case 'enableMultipleVendorOrder':
         return true;
       case 'enableReferSystem':
-        return '1';
+        return '0'; // Disabled for simplicity
       case 'referAmount':
-        return '10';
+        return '0'; // No referral system
       case 'enableChat':
-        return '1';
+        return '0'; // Disabled for simplicity
       case 'enableOrderTracking':
         return '1';
       case 'enableFatchByLocation':
@@ -259,10 +258,8 @@ class AppStrings {
         return '911';
       case 'auth':
         return {
-          'googleLogin': true,
-          'appleLogin': false,
-          'facebbokLogin': false, // Set to false to avoid conflicts
-          'qrcodeLogin': true
+          'qrcodeLogin': false,   // QR login removed for simplicity
+          'socialLogin': false    // Social media login removed
         };
       case 'ui':
         return {
@@ -311,9 +308,9 @@ class AppStrings {
           'delivery': {
             'collectDeliveryCash': 1
           },
-          'enableLoyalty': 1,
-          'point_to_amount': 100,
-          'amount_to_point': 1
+          'enableLoyalty': 0,  // Simplified - no loyalty points
+          'point_to_amount': 0,
+          'amount_to_point': 0
         };
       case 'map':
         return {

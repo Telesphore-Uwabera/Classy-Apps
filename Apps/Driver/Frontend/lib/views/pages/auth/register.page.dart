@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fuodz/services/language.service.dart';
@@ -134,6 +135,13 @@ class _RegisterPageState extends State<RegisterPage> {
         };
         
         print('Registration data: $registrationData');
+        
+        // Check if Firebase is initialized
+        try {
+          Firebase.app();
+        } catch (e) {
+          throw Exception('Firebase is not initialized. Please restart the app.');
+        }
         
         // Use Firebase authentication for registration
         final email = "${fullPhone.replaceAll('+', '').replaceAll(' ', '')}@classy.app";
@@ -604,6 +612,20 @@ class _RegisterPageState extends State<RegisterPage> {
                               color: Color(0xFFE91E63),
                               fontWeight: FontWeight.w600,
                               fontSize: screenWidth * 0.035, // 3.5% of screen width
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pushNamed('/firebase-status');
+                          },
+                          child: Text(
+                            'Debug: Check Firebase Status',
+                            style: TextStyle(
+                              color: Colors.orange,
+                              fontWeight: FontWeight.w500,
+                              fontSize: screenWidth * 0.03,
                             ),
                           ),
                         ),

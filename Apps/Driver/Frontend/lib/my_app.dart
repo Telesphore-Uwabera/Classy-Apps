@@ -23,6 +23,7 @@ import 'package:fuodz/views/pages/my_vehicles/my_vehicles.page.dart';
 import 'package:fuodz/views/pages/my_documents/my_documents.page.dart';
 import 'package:fuodz/views/pages/settings.page.dart';
 import 'package:fuodz/views/pages/service_history.page.dart';
+import 'package:fuodz/views/pages/firebase_status.page.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -58,6 +59,7 @@ class MyApp extends StatelessWidget {
           '/my-vehicles': (context) => MyVehiclesPage(),
           '/my-documents': (context) => MyDocumentsPage(),
           '/settings': (context) => SettingsPage(),
+          '/firebase-status': (context) => FirebaseStatusPage(),
         },
         theme: ThemeData(
           primarySwatch: Colors.pink,

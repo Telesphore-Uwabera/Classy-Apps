@@ -1,4 +1,3 @@
-import 'dart:html' as html;
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';

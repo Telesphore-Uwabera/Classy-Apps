@@ -8,6 +8,7 @@ String cartToJson(Cart data) => json.encode(data.toJson());
 
 class Cart {
   Cart({
+    this.id,
     this.price,
     this.product,
     this.options,
@@ -19,6 +20,7 @@ class Cart {
   });
 
   //
+  String? id;
   int? selectedQty;
   double? price;
   Product? product;
@@ -31,6 +33,7 @@ class Cart {
 
   factory Cart.fromJson(Map<String, dynamic> json) {
     return Cart(
+      id: json["id"],
       selectedQty: json["selected_qty"] == null ? 1 : json["selected_qty"],
       price:
           json["price"] == null ? 0.00 : double.parse(json["price"].toString()),
@@ -49,6 +52,7 @@ class Cart {
   }
 
   Map<String, dynamic> toJson() => {
+        "id": id,
         "selected_qty": selectedQty,
         "price": price,
         "options_price": optionsPrice,

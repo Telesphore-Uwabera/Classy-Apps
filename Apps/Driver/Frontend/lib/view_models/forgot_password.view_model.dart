@@ -1,5 +1,6 @@
 import 'package:fuodz/services/alert.service.dart';
 import 'package:country_picker/country_picker.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fuodz/constants/app_strings.dart';
@@ -94,6 +95,13 @@ class ForgotPasswordViewModel extends MyBaseViewModel {
 
     //
     //firebase authentication
+    // Check if Firebase is initialized
+    try {
+      Firebase.app();
+    } catch (e) {
+      throw Exception('Firebase is not initialized. Please restart the app.');
+    }
+    
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: phoneNumber,
       verificationCompleted: (PhoneAuthCredential credential) async {

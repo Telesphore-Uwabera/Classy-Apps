@@ -3,12 +3,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 import 'package:flutter/material.dart';
+import 'package:Classy/services/auth_validation.service.dart';
 import 'package:Classy/constants/app_routes.dart';
 import 'package:Classy/constants/app_strings.dart';
 import 'package:Classy/requests/auth.request.dart';
 import 'package:Classy/services/alert.service.dart';
 import 'package:Classy/services/auth.service.dart';
 import 'package:Classy/services/firebase.service.dart';
+import 'package:Classy/services/toast.service.dart';
+import 'package:Classy/services/unified_auth.service.dart';
 import 'package:Classy/utils/utils.dart';
 import 'package:Classy/widgets/bottomsheets/account_verification_entry.dart';
 import 'package:localize_and_translate/localize_and_translate.dart';
@@ -66,6 +69,19 @@ class RegisterViewModel extends MyBaseViewModel {
   void processRegister() async {
     //
     accountPhoneNumber = "+${selectedCountry?.phoneCode}${phoneTEC.text}";
+    
+    // Validate phone number is complete
+    if (phoneTEC.text.trim().isEmpty) {
+      ToastService.toastError("Please enter your phone number");
+      return;
+    }
+    
+    final digitsOnly = accountPhoneNumber!.replaceAll(RegExp(r'[^\d]'), '');
+    if (digitsOnly.length < 10) {
+      ToastService.toastError("Please enter a complete phone number");
+      return;
+    }
+    
     //
     // Validate returns true if the form is valid, otherwise false.
     if (formKey.currentState!.validate() && agreed) {
@@ -207,68 +223,48 @@ class RegisterViewModel extends MyBaseViewModel {
 
 ///////
   ///
-  // DIRECT REGISTRATION PATH - Using Firebase Authentication
+  // DIRECT REGISTRATION PATH - Using Unified Authentication Service
   Future<void> finishAccountRegistration() async {
     setBusy(true);
 
     try {
-      // Use Firebase authentication for registration
+      // Use unified authentication service for registration
       final phoneNumber = accountPhoneNumber!;
-      final email = emailTEC.text.isNotEmpty ? emailTEC.text : "${phoneNumber.replaceAll('+', '').replaceAll(' ', '')}@classy.app";
+      // Always generate email from phone number for consistency
+      final email = "${phoneNumber.replaceAll('+', '').replaceAll(' ', '')}@classy.app";
       
-      print("🔥 Starting Firebase registration for: $email");
+      print("🔥 Starting registration for: $email");
+      print("📱 Phone number: $phoneNumber");
+      print("👤 Name: ${nameTEC.text}");
+      print("📧 User email (optional): ${emailTEC.text}");
       
-      // Create user with Firebase
-      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      // Use unified authentication service
+      final result = await UnifiedAuthService.signUpWithEmailPassword(
         email: email,
         password: passwordTEC.text,
-      ).catchError((error) {
-        print("❌ Firebase registration error: $error");
-        throw error;
-      });
+        name: nameTEC.text,
+        phone: phoneNumber,
+        countryCode: selectedCountry!.countryCode,
+      );
       
-      if (userCredential.user != null) {
-        // Update user profile with additional information
-        await userCredential.user!.updateDisplayName(nameTEC.text);
+      if (result['success'] == true) {
+        print("✅ Registration successful");
         
-        // Save user data to Firestore
-        try {
-          await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
-            'name': nameTEC.text,
-            'email': emailTEC.text,
-            'phone': phoneNumber,
-            'countryCode': selectedCountry!.countryCode,
-            'referralCode': referralCodeTEC.text,
-            'role': 'customer',
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-          print("✅ User data saved to Firestore");
-        } catch (firestoreError) {
-          print("⚠️ Firestore error (non-critical): $firestoreError");
-          // Continue with registration even if Firestore fails
-        }
-        
-        // Save user data locally
-        await AuthServices.saveUser({
-          'id': userCredential.user!.uid,
-          'name': nameTEC.text,
-          'email': emailTEC.text,
-          'phone': phoneNumber,
-          'country_code': selectedCountry!.countryCode,
-        });
-        
-        // Registration completed successfully
-        setBusy(false);
+        // Navigate to home
         Navigator.of(viewContext).pushNamedAndRemoveUntil(
           AppRoutes.homeRoute,
           (_) => false,
         );
+      } else {
+        // Handle registration errors
+        String errorMessage = result['message'] ?? "Registration failed. Please try again.";
+        
+        ToastService.toastError(errorMessage);
       }
       
     } catch (error) {
       setBusy(false);
-      print("Firebase registration error: $error");
+      print("❌ Registration error: $error");
       
       // Try fallback registration for web compatibility
       if (kIsWeb) {
@@ -281,20 +277,9 @@ class RegisterViewModel extends MyBaseViewModel {
         }
       }
       
-      // Handle specific Firebase errors
-      String errorMessage = "Registration failed. Please try again.";
-      if (error.toString().contains('email-already-in-use')) {
-        errorMessage = "An account with this phone number already exists.";
-      } else if (error.toString().contains('weak-password')) {
-        errorMessage = "Password is too weak. Please choose a stronger password.";
-      } else if (error.toString().contains('invalid-email')) {
-        errorMessage = "Invalid phone number format.";
-      }
-      
-      AlertService.error(
-        title: "Registration Failed".tr(),
-        text: errorMessage,
-      );
+      ToastService.toastError("Registration failed. Please try again.");
+    } finally {
+      setBusy(false);
     }
   }
 

@@ -1,11 +1,9 @@
-import 'package:custom_sliding_segmented_control/custom_sliding_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:Classy/constants/app_colors.dart';
 import 'package:Classy/constants/sizes.dart';
 import 'package:Classy/utils/ui_spacer.dart';
 import 'package:Classy/view_models/login.view_model.dart';
 import 'package:Classy/views/pages/auth/login/email_login.view.dart';
-import 'package:Classy/views/pages/auth/login/otp_login.view.dart';
 import 'package:localize_and_translate/localize_and_translate.dart';
 import 'package:velocity_x/velocity_x.dart';
 
@@ -21,16 +19,13 @@ class CombinedLoginTypeView extends StatefulWidget {
 }
 
 class _CombinedLoginTypeViewState extends State<CombinedLoginTypeView> {
-  bool useOTP = true;
-
   @override
   Widget build(BuildContext context) {
     return VStack([
       UiSpacer.vSpace(),
-      CustomSlidingSegmentedControl<int>(
-        isStretch: true,
-        initialValue: 1,
-        children: {1: Text("Phone Number".tr()), 2: Text("Email Address".tr())},
+      // Simple header for email login
+      Container(
+        padding: EdgeInsets.symmetric(vertical: 16, horizontal: 20),
         decoration: BoxDecoration(
           color: context.theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(
@@ -40,30 +35,17 @@ class _CombinedLoginTypeViewState extends State<CombinedLoginTypeView> {
             BorderSide(color: AppColor.primaryColor, width: 1.5),
           ),
         ),
-        thumbDecoration: BoxDecoration(
-          color: context.theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(
-            (widget.radius ?? Sizes.radiusDefault) * 0.60,
+        child: Text(
+          "Email Address".tr(),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColor.primaryColor,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColor.primaryColor.withOpacity(.55),
-              blurRadius: 5.0,
-              spreadRadius: 1.2,
-              offset: Offset(1.50, 1.50),
-            ),
-          ],
-        ),
-        duration: Duration(milliseconds: 200),
-        curve: Curves.easeInToLinear,
-        onValueChanged: (value) {
-          setState(() {
-            useOTP = value == 1;
-          });
-        },
-      ).centered(),
+        ).centered(),
+      ),
       //
-      useOTP ? OTPLoginView(widget.model) : EmailLoginView(widget.model),
+      EmailLoginView(widget.model),
     ]);
   }
 }

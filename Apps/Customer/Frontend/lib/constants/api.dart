@@ -97,6 +97,17 @@ class Api {
   static const String generalOrderSummary = "generalOrderSummary";
   static const String serviceOrderSummary = "serviceOrderSummary";
   
+  // ===== TAXI/RIDE ENDPOINTS =====
+  static const String vehicleTypes = "vehicleTypes";
+  static const String vehicleTypePricing = "vehicleTypePricing";
+  static const String taxiLocationAvailable = "taxiLocationAvailable";
+  static const String newTaxiBooking = "newTaxiBooking";
+  static const String currentTaxiBooking = "currentTaxiBooking";
+  static const String cancelTaxiBooking = "cancelTaxiBooking";
+  static const String taxiDriverInfo = "taxiDriverInfo";
+  static const String taxiTripLocationHistory = "taxiTripLocationHistory";
+  static const String lastRatebleTaxiBooking = "lastRatebleTaxiBooking";
+  
   // ===== FIREBASE AUTH METHODS =====
   static const String authMethod = "firebase_auth";
   static const String storageMethod = "firebase_storage";

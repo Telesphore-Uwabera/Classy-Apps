@@ -26,14 +26,14 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
+      id: json['id'] is String ? int.tryParse(json['id']) ?? 0 : json['id'] ?? 0,
       code: json['code'],
-      name: json['name'],
+      name: json['name'] ?? "",
       email: json['email'] ?? "",
       phone: json['phone'] ?? "",
       rawPhone: json['raw_phone'],
       walletAddress: json['wallet_address'] ?? "",
-      countryCode: json['country_code'],
+      countryCode: json['country_code'] ?? "",
       photo: json['photo'] ?? "",
       role: json['role_name'] ?? "client",
     );

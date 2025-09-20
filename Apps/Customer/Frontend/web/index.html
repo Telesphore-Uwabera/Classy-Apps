@@ -30,6 +30,25 @@
   <title>Classy</title>
   <link rel="manifest" href="manifest.json">
   
+  <!-- Firebase Configuration -->
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-crashlytics-compat.js"></script>
+  
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyASmUafz431YLkL6d1tNL9qv5cuHC1TkDw",
+      authDomain: "classyapp-unified-backend.firebaseapp.com",
+      projectId: "classyapp-unified-backend",
+      storageBucket: "classyapp-unified-backend.firebasestorage.app",
+      messagingSenderId: "156854442550",
+      appId: "1:156854442550:web:d13731da964675113b9697"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+  </script>
   
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
   <style id="splash-screen-style">

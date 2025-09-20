@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:country_picker/country_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:Classy/constants/app_strings.dart';
@@ -9,7 +10,7 @@ import 'package:Classy/models/api_response.dart';
 import 'package:Classy/requests/auth.request.dart';
 import 'package:Classy/services/alert.service.dart';
 import 'package:Classy/services/auth.service.dart';
-import 'package:Classy/services/social_media_login.service.dart';
+import 'package:Classy/services/unified_auth.service.dart';
 import 'package:Classy/traits/qrcode_scanner.trait.dart';
 import 'package:Classy/utils/utils.dart';
 import 'package:Classy/constants/app_routes.dart';
@@ -30,10 +31,7 @@ class LoginViewModel extends MyBaseViewModel with QrcodeScannerTrait {
 
   //
   AuthRequest authRequest = AuthRequest();
-  SocialMediaLoginService socialMediaLoginService = SocialMediaLoginService();
-  bool otpLogin = AppStrings.enableOTPLogin;
   Country? selectedCountry;
-  String? accountPhoneNumber;
 
   LoginViewModel(BuildContext context) {
     this.viewContext = context;
@@ -54,10 +52,7 @@ class LoginViewModel extends MyBaseViewModel with QrcodeScannerTrait {
     }
   }
 
-  toggleLoginType() {
-    otpLogin = !otpLogin;
-    notifyListeners();
-  }
+  // toggleLoginType() method removed - OTP authentication disabled
 
   showCountryDialPicker() {
     showCountryPicker(
@@ -72,205 +67,69 @@ class LoginViewModel extends MyBaseViewModel with QrcodeScannerTrait {
     notifyListeners();
   }
 
-  void processOTPLogin() async {
-    //
-    accountPhoneNumber = "+${selectedCountry?.phoneCode}${phoneTEC.text}";
-    // Validate returns true if the form is valid, otherwise false.
-    if (formKey.currentState!.validate()) {
-      //
+  // All OTP-related methods removed - OTP authentication disabled
 
-      setBusyForObject(otpLogin, true);
-      //phone number verification
-      // Demo: skip server verify and open 4-digit entry immediately
-      setBusyForObject(otpLogin, false);
-      showVerificationEntry();
-    }
-  }
+  // All OTP verification methods removed - OTP authentication disabled
 
-  //PROCESSING VERIFICATION
-  processFirebaseOTPVerification() async {
-    setBusyForObject(otpLogin, true);
-    //firebase authentication
-    await FirebaseAuth.instance.verifyPhoneNumber(
-      phoneNumber: accountPhoneNumber,
-      verificationCompleted: (PhoneAuthCredential credential) {
-        // firebaseVerificationId = credential.verificationId;
-        // verifyFirebaseOTP(credential.smsCode);
-        print("verificationCompleted ==>  Yes");
-        // finishOTPLogin(credential);
-      },
-      verificationFailed: (FirebaseAuthException e) {
-        log("Error message ==> ${e.message}");
-        if (e.code == 'invalid-phone-number') {
-          viewContext.showToast(
-              msg: "Invalid Phone Number".tr(), bgColor: Colors.red);
-        } else {
-          viewContext.showToast(
-              msg: e.message ?? "Failed".tr(), bgColor: Colors.red);
-        }
-        //
-        setBusyForObject(otpLogin, false);
-      },
-      codeSent: (String verificationId, int? resendToken) async {
-        firebaseVerificationId = verificationId;
-        print("codeSent ==>  $firebaseVerificationId");
-        showVerificationEntry();
-      },
-      codeAutoRetrievalTimeout: (String verificationId) {
-        print("codeAutoRetrievalTimeout called");
-      },
-    );
-    setBusyForObject(otpLogin, false);
-  }
-
-  processCustomOTPVerification() async {
-    setBusyForObject(otpLogin, true);
-    try {
-      await AuthRequest.sendOTP(accountPhoneNumber!);
-      setBusyForObject(otpLogin, false);
-      showVerificationEntry();
-    } catch (error) {
-      setBusyForObject(otpLogin, false);
-      viewContext.showToast(msg: "$error", bgColor: Colors.red);
-    }
-  }
-
-  //
-  void showVerificationEntry() async {
-    //
-    setBusy(false);
-    //
-    await viewContext.push(
-      (context) => AccountVerificationEntry(
-        vm: this,
-        phone: accountPhoneNumber!,
-        onSubmit: (smsCode) {
-          //
-          if (AppStrings.isFirebaseOtp) {
-            verifyFirebaseOTP(smsCode);
-          } else {
-            verifyCustomOTP(smsCode);
-          }
-
-          viewContext.pop();
-        },
-        onResendCode: () async {
-          if (!AppStrings.isCustomOtp) {
-            return;
-          }
-          try {
-            final response = await AuthRequest.sendOTP(
-              accountPhoneNumber!,
-            );
-            toastSuccessful(response.message ?? "Code sent successfully".tr());
-          } catch (error) {
-            viewContext.showToast(msg: "$error", bgColor: Colors.red);
-          }
-        },
-      ),
-    );
-  }
-
-  //
-  void verifyFirebaseOTP(String smsCode) async {
-    //
-    setBusyForObject(otpLogin, true);
-
-    // Sign the user in (or link) with the credential
-    try {
-      // Create a PhoneAuthCredential with the code
-      PhoneAuthCredential phoneAuthCredential = PhoneAuthProvider.credential(
-        verificationId: firebaseVerificationId!,
-        smsCode: smsCode,
-      );
-
-      //
-      await finishOTPLogin(phoneAuthCredential);
-    } catch (error) {
-      viewContext.showToast(msg: "$error", bgColor: Colors.red);
-    }
-    //
-    setBusyForObject(otpLogin, false);
-  }
-
-  void verifyCustomOTP(String smsCode) async {
-    //
-    setBusy(true);
-    // Demo: accept any 4-digit code
-    final apiResponse = ApiResponse(
-      code: 200,
-      message: "OK",
-      body: {
-        "token": "mock_token_demo",
-        "fb_token": "mock_offline_token",
-        "user": {
-          "id": 785043355,
-          "name": "Classy Customer",
-          "email": "client@demo.com",
-          "phone": accountPhoneNumber ?? "+250 785 043 355",
-          "photo": "",
-        }
-      },
-    );
-    setBusy(false);
-    await handleDeviceLogin(apiResponse);
-  }
-
-  //Login with Firebase OTP - Direct Firebase authentication
-  finishOTPLogin(AuthCredential authCredential) async {
-    //
-    setBusyForObject(otpLogin, true);
-    // Sign the user in (or link) with the credential
-    try {
-      //
-      final userCredential = await FirebaseAuth.instance.signInWithCredential(
-        authCredential,
-      );
-      
-      if (userCredential.user != null) {
-        // Save user data locally
-        await AuthServices.saveUser({
-          'id': userCredential.user!.uid,
-          'name': userCredential.user!.displayName ?? 'User',
-          'email': userCredential.user!.email ?? '',
-          'phone': accountPhoneNumber!,
-        });
-        
-        // Navigate to home
-        Navigator.of(viewContext).pushReplacementNamed(AppRoutes.homeRoute);
-      }
-      
-    } catch (error) {
-      viewContext.showToast(msg: "$error", bgColor: Colors.red);
-    }
-    //
-    setBusyForObject(otpLogin, false);
-  }
-
-  //REGULAR LOGIN - Using Firebase Authentication
+  //REGULAR LOGIN - Using Unified Authentication Service
   void processLogin() async {
     // Validate returns true if the form is valid, otherwise false.
     if (formKey.currentState!.validate()) {
       setBusy(true);
 
       try {
-        // Use Firebase authentication instead of Laravel backend
-        final phoneNumber = "+${selectedCountry?.phoneCode}${phoneTEC.text}";
+        // Get phone number from the form
+        String phoneInput = phoneTEC.text.trim();
+        String password = passwordTEC.text;
         
-        // Sign in with Firebase using phone number and password
-        // For now, we'll use email/password authentication with a generated email
+        // Validate that phone input is not empty
+        if (phoneInput.isEmpty) {
+          AlertService.error(title: "Login Failed".tr(), text: "Please enter your phone number");
+          setBusy(false);
+          return;
+        }
+        
+        // Construct full phone number with country code
+        final phoneNumber = phoneInput.startsWith('+') 
+            ? phoneInput 
+            : "+${selectedCountry?.phoneCode}${phoneInput}";
+        
+        // Validate that we have a complete phone number (at least 10 digits after country code)
+        final digitsOnly = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
+        if (digitsOnly.length < 10) {
+          AlertService.error(title: "Login Failed".tr(), text: "Please enter a complete phone number");
+          setBusy(false);
+          return;
+        }
+        
+        print("🔥 Attempting login with phone: $phoneNumber");
+        
+        // Convert phone number to email format for Firebase Auth
         final email = "${phoneNumber.replaceAll('+', '').replaceAll(' ', '')}@classy.app";
         
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
+        // Use unified authentication service
+        final result = await UnifiedAuthService.signInWithEmailPassword(
           email: email,
-          password: passwordTEC.text,
+          password: password,
         );
         
-        // If successful, navigate to home
-        Navigator.of(viewContext).pushReplacementNamed(AppRoutes.homeRoute);
+        if (result['success'] == true) {
+          print("✅ Login successful");
+          
+          // Navigate to home
+          Navigator.of(viewContext).pushReplacementNamed(AppRoutes.homeRoute);
+        } else {
+          // Handle login errors
+          String errorMessage = result['message'] ?? "Login failed. Please try again.";
+          
+          AlertService.error(
+            title: "Login Failed".tr(),
+            text: errorMessage,
+          );
+        }
         
       } catch (error) {
-        print("Firebase login error: $error");
+        print("❌ Login error: $error");
         
         // Try fallback login for web compatibility
         if (kIsWeb) {
@@ -283,23 +142,85 @@ class LoginViewModel extends MyBaseViewModel with QrcodeScannerTrait {
           }
         }
         
-        // Handle specific Firebase errors
-        String errorMessage = "Please check your credentials and try again.";
-        if (error.toString().contains('user-not-found')) {
-          errorMessage = "No account found with this phone number.";
-        } else if (error.toString().contains('wrong-password')) {
-          errorMessage = "Incorrect password.";
-        } else if (error.toString().contains('invalid-email')) {
-          errorMessage = "Invalid phone number format.";
-        }
-        
         AlertService.error(
           title: "Login Failed".tr(),
-          text: errorMessage,
+          text: "An unexpected error occurred. Please try again.",
         );
       } finally {
         setBusy(false);
       }
+    }
+  }
+
+  // Load user data from Firestore after successful login
+  Future<void> _loadUserDataFromFirestore(String uid) async {
+    try {
+      print("📱 Loading user data from Firestore for UID: $uid");
+      
+      // Get user document from Firestore
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+      
+      if (doc.exists) {
+        final userData = doc.data()!;
+        print("✅ User data found in Firestore: $userData");
+        
+        // Verify the user data matches the login attempt
+        final phoneNumber = "+${selectedCountry?.phoneCode}${phoneTEC.text}";
+        final expectedEmail = "${phoneNumber.replaceAll('+', '').replaceAll(' ', '')}@classy.app";
+        
+        print("🔍 Verifying login data:");
+        print("   Expected phone: $phoneNumber");
+        print("   Expected email: $expectedEmail");
+        print("   Stored phone: ${userData['phone']}");
+        print("   Stored email: ${userData['email']}");
+        
+        // Check if the phone number matches
+        if (userData['phone'] == phoneNumber) {
+          print("✅ Phone number verification successful");
+          
+          // Save user data locally
+          await AuthServices.saveUser({
+            'id': uid,
+            'name': userData['name'] ?? 'User',
+            'email': userData['email'] ?? '',
+            'phone': userData['phone'] ?? '',
+            'country_code': userData['countryCode'] ?? 'US',
+            'role': userData['role'] ?? 'customer',
+          });
+          
+          print("✅ User data saved locally");
+        } else {
+          print("❌ Phone number mismatch - this might be a different user");
+          throw Exception("Phone number does not match registered user");
+        }
+      } else {
+        print("⚠️ User document not found in Firestore, using basic data");
+        
+        // Save basic user data from Firebase Auth
+        final user = FirebaseAuth.instance.currentUser!;
+        await AuthServices.saveUser({
+          'id': uid,
+          'name': user.displayName ?? 'User',
+          'email': user.email ?? '',
+          'phone': user.phoneNumber ?? '',
+          'role': 'customer',
+        });
+      }
+    } catch (error) {
+      print("❌ Error loading user data from Firestore: $error");
+      
+      // Fallback to basic user data
+      final user = FirebaseAuth.instance.currentUser!;
+      await AuthServices.saveUser({
+        'id': uid,
+        'name': user.displayName ?? 'User',
+        'email': user.email ?? '',
+        'phone': user.phoneNumber ?? '',
+        'role': 'customer',
+      });
     }
   }
 
@@ -420,4 +341,9 @@ class LoginViewModel extends MyBaseViewModel with QrcodeScannerTrait {
       ),
     );
   }
+
+  // Social login methods removed - only phone/password authentication available
+
+  // Phone OTP Login
+  // OTP-related methods removed to eliminate network permission issues
 }

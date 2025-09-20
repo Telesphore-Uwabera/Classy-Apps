@@ -1,6 +1,8 @@
 import 'package:fuodz/services/alert.service.dart';
 import 'package:country_picker/country_picker.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide User;
+import 'package:fuodz/services/fallback_auth.service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fuodz/constants/app_routes.dart';
@@ -58,20 +60,50 @@ class LoginViewModel extends MyBaseViewModel with QrcodeScannerTrait {
       setBusy(true);
 
       try {
-        // Use Firebase authentication instead of Laravel backend
+        // Check if Firebase is initialized
+        bool firebaseAvailable = false;
+        try {
+          Firebase.app();
+          firebaseAvailable = true;
+        } catch (e) {
+          print('Firebase not available, using fallback login');
+        }
+        
         final phoneNumber = "+${selectedCountry.phoneCode}${phoneTEC.text}";
         
-        // Sign in with Firebase using phone number and password
-        // For now, we'll use email/password authentication with a generated email
-        final email = "${phoneNumber.replaceAll('+', '').replaceAll(' ', '')}@classy.app";
+        if (firebaseAvailable) {
+          try {
+            // Use Firebase authentication
+            final email = "${phoneNumber.replaceAll('+', '').replaceAll(' ', '')}@classy.app";
+            
+            await FirebaseAuth.instance.signInWithEmailAndPassword(
+              email: email,
+              password: passwordTEC.text,
+            );
+            
+            // If successful, navigate to home
+            Navigator.of(viewContext).pushReplacementNamed(AppRoutes.homeRoute);
+            return;
+          } catch (firebaseError) {
+            print('Firebase login failed: $firebaseError');
+            // Continue with fallback login
+          }
+        }
         
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: email,
-          password: passwordTEC.text,
-        );
-        
-        // If successful, navigate to home
-        Navigator.of(viewContext).pushReplacementNamed(AppRoutes.homeRoute);
+        // Fallback: Use local authentication when Firebase is not available
+        if (!firebaseAvailable) {
+          print('Using fallback login - Firebase not available');
+          
+          final user = await FallbackAuthService.loginUser(phoneNumber, passwordTEC.text);
+          
+          if (user != null) {
+            // If successful, navigate to home
+            Navigator.of(viewContext).pushReplacementNamed(AppRoutes.homeRoute);
+            return;
+          } else {
+            throw Exception('Invalid credentials');
+          }
+        }
         
       } catch (error) {
         print("Firebase login error: $error");
@@ -149,6 +181,13 @@ class LoginViewModel extends MyBaseViewModel with QrcodeScannerTrait {
   processFirebaseOTPVerification() async {
     setBusyForObject(otpLogin, true);
     //firebase authentication
+    // Check if Firebase is initialized
+    try {
+      Firebase.app();
+    } catch (e) {
+      throw Exception('Firebase is not initialized. Please restart the app.');
+    }
+    
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: accountPhoneNumber,
       verificationCompleted: (PhoneAuthCredential credential) {
@@ -275,6 +314,13 @@ class LoginViewModel extends MyBaseViewModel with QrcodeScannerTrait {
     // Sign the user in (or link) with the credential
     try {
       //
+      // Check if Firebase is initialized
+      try {
+        Firebase.app();
+      } catch (e) {
+        throw Exception('Firebase is not initialized. Please restart the app.');
+      }
+      
       final userCredential = await FirebaseAuth.instance.signInWithCredential(
         authCredential,
       );
@@ -339,6 +385,13 @@ class LoginViewModel extends MyBaseViewModel with QrcodeScannerTrait {
         //everything works well
         //firebase auth
         final fbToken = apiResponse.body["fb_token"];
+        // Check if Firebase is initialized
+        try {
+          Firebase.app();
+        } catch (e) {
+          throw Exception('Firebase is not initialized. Please restart the app.');
+        }
+        
         await FirebaseAuth.instance.signInWithCustomToken(fbToken);
         final driver = await AuthServices.saveUser(apiResponse.body["user"]);
         if (driver.isTaxiDriver && apiResponse.body["vehicle"] != null) {

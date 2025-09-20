@@ -158,10 +158,7 @@ class NotificationListItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
       ),
       child: Icon(
-        IconData(
-          int.parse('0xe${_getIconCode()}'),
-          fontFamily: 'MaterialIcons',
-        ),
+        Icons.notifications,
         color: _getBorderColor(null),
         size: 24,
       ),

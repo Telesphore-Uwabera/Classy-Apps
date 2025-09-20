@@ -1,6 +1,5 @@
 import 'package:Classy/models/api_response.dart';
 import 'package:Classy/services/http.service.dart';
-import 'package:Classy/services/auth.service.dart';
 import 'package:Classy/constants/api.dart';
 
 class CartApiService extends HttpService {

@@ -2,6 +2,8 @@ import 'package:Classy/models/api_response.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:Classy/services/auth.service.dart';
+import 'package:Classy/services/firebase_product_catalog.service.dart';
+import 'package:Classy/services/firebase_order.service.dart';
 
 class FoodApiService {
   static final FoodApiService _instance = FoodApiService._internal();
@@ -10,6 +12,16 @@ class FoodApiService {
 
   // Base URL pointing to customer-backend
   static const String _baseUrl = 'http://localhost:8000/api';
+  
+  // Firebase services
+  final FirebaseProductCatalogService _firebaseService = FirebaseProductCatalogService();
+  final FirebaseOrderService _firebaseOrderService = FirebaseOrderService();
+
+  /// Initialize food API service
+  void initialize() {
+    _firebaseService.initialize();
+    _firebaseOrderService.initialize();
+  }
 
   // Get list of food vendors
   Future<ApiResponse> getVendors({
@@ -20,6 +32,20 @@ class FoodApiService {
     double? longitude,
   }) async {
     try {
+      // Try Firebase first
+      final firebaseResponse = await _firebaseService.getVendors(
+        page: page,
+        limit: limit,
+        category: category,
+        latitude: latitude,
+        longitude: longitude,
+      );
+      
+      if (firebaseResponse.code == 200) {
+        return firebaseResponse;
+      }
+      
+      // Fallback to HTTP API
       final token = await AuthServices.getAuthBearerToken();
       
       // Build query parameters
@@ -67,6 +93,16 @@ class FoodApiService {
   // Get vendor details and menu
   Future<ApiResponse> getVendorMenu(int vendorId) async {
     try {
+      // Try Firebase first
+      final firebaseResponse = await _firebaseService.getVendorMenu(
+        vendorId.toString(),
+      );
+      
+      if (firebaseResponse.code == 200) {
+        return firebaseResponse;
+      }
+      
+      // Fallback to HTTP API
       final token = await AuthServices.getAuthBearerToken();
       
       // Use inter-app endpoint to get vendor menu from Vendor App
@@ -111,6 +147,22 @@ class FoodApiService {
     int limit = 20,
   }) async {
     try {
+      // Try Firebase first
+      final firebaseResponse = await _firebaseService.searchProducts(
+        query,
+        category: category,
+        vendorId: vendorId?.toString(),
+        minPrice: minPrice,
+        maxPrice: maxPrice,
+        page: page,
+        limit: limit,
+      );
+      
+      if (firebaseResponse.code == 200) {
+        return firebaseResponse;
+      }
+      
+      // Fallback to HTTP API
       final token = await AuthServices.getAuthBearerToken();
       
       // Build query parameters
@@ -160,6 +212,14 @@ class FoodApiService {
   // Place food order
   Future<ApiResponse> placeOrder(Map<String, dynamic> orderData) async {
     try {
+      // Try Firebase first
+      final firebaseResponse = await _firebaseOrderService.createOrder(orderData);
+      
+      if (firebaseResponse.code == 200) {
+        return firebaseResponse;
+      }
+      
+      // Fallback to HTTP API
       final token = await AuthServices.getAuthBearerToken();
       
       final response = await http.post(

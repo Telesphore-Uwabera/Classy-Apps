@@ -25,7 +25,6 @@ import 'package:Classy/requests/vendor.request.dart';
 import 'package:Classy/services/alert.service.dart';
 import 'package:Classy/services/app.service.dart';
 import 'package:Classy/services/chat.service.dart';
-import 'package:Classy/services/notification.service.dart';
 import 'package:Classy/services/toast.service.dart';
 import 'package:Classy/views/pages/home.page.dart';
 import 'package:Classy/views/pages/service/service_details.page.dart';
