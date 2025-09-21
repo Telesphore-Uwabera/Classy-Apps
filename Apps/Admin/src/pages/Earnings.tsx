@@ -1,20 +1,94 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, Download, Calendar, DollarSign } from 'lucide-react'
+import { TrendingUp, Download, Calendar, DollarSign, RefreshCw } from 'lucide-react'
+import { firebaseService } from '../services/firebaseService'
 
 export default function Earnings() {
   const [activeTab, setActiveTab] = useState<'today' | 'thisWeek' | 'thisMonth' | 'thisYear' | 'custom'>('today')
-  const [amountEarned, setAmountEarned] = useState(0)
-
-  const earningsData = {
+  const [earningsData, setEarningsData] = useState({
     today: 0,
-    thisWeek: 150,
-    thisMonth: 1200,
-    thisYear: 15000
+    thisWeek: 0,
+    thisMonth: 0,
+    thisYear: 0
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadEarningsData()
+  }, [])
+
+  const loadEarningsData = async () => {
+    try {
+      setLoading(true)
+      
+      // Get all orders and calculate earnings based on date ranges
+      const orders = await firebaseService.getOrders()
+      const now = new Date()
+      
+      // Calculate date ranges
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      const thisWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
+      const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      const thisYear = new Date(now.getFullYear(), 0, 1)
+      
+      // Calculate earnings for each period
+      const todayEarnings = orders.filter((order: any) => {
+        const orderDate = order.createdAt?.toDate?.() || new Date(order.createdAt)
+        return orderDate >= today && order.status === 'delivered'
+      }).reduce((total: number, order: any) => total + (order.adminCommission || 0), 0)
+      
+      const weekEarnings = orders.filter((order: any) => {
+        const orderDate = order.createdAt?.toDate?.() || new Date(order.createdAt)
+        return orderDate >= thisWeek && order.status === 'delivered'
+      }).reduce((total: number, order: any) => total + (order.adminCommission || 0), 0)
+      
+      const monthEarnings = orders.filter((order: any) => {
+        const orderDate = order.createdAt?.toDate?.() || new Date(order.createdAt)
+        return orderDate >= thisMonth && order.status === 'delivered'
+      }).reduce((total: number, order: any) => total + (order.adminCommission || 0), 0)
+      
+      const yearEarnings = orders.filter((order: any) => {
+        const orderDate = order.createdAt?.toDate?.() || new Date(order.createdAt)
+        return orderDate >= thisYear && order.status === 'delivered'
+      }).reduce((total: number, order: any) => total + (order.adminCommission || 0), 0)
+      
+      setEarningsData({
+        today: todayEarnings,
+        thisWeek: weekEarnings,
+        thisMonth: monthEarnings,
+        thisYear: yearEarnings
+      })
+    } catch (error) {
+      console.error('Error loading earnings data:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleExport = () => {
     // Implement export functionality
-    console.log('Exporting earnings data...')
+    const data = {
+      period: activeTab,
+      earnings: earningsData[activeTab],
+      timestamp: new Date().toISOString()
+    }
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `earnings-${activeTab}-${new Date().toISOString().split('T')[0]}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -22,15 +96,24 @@ export default function Earnings() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Earnings</h1>
-          <p className="text-gray-600 mt-1">Track platform earnings and commissions</p>
+          <p className="text-gray-600 mt-1">Track platform earnings from Firebase</p>
         </div>
-        <button
-          onClick={handleExport}
-          className="flex items-center px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Export
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={loadEarningsData}
+            className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </button>
+          <button
+            onClick={handleExport}
+            className="flex items-center px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </button>
+        </div>
       </div>
 
       {/* Date Filter Tabs */}
@@ -61,63 +144,37 @@ export default function Earnings() {
       {/* Earnings Summary */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-800">Earnings Summary</h3>
-          <div className="flex items-center text-2xl font-bold text-gray-900">
-            <DollarSign className="w-6 h-6 mr-2" />
-            Amount Earned: {earningsData[activeTab as keyof typeof earningsData]}
+          <h2 className="text-xl font-semibold text-gray-800">Earnings Summary</h2>
+          <div className="flex items-center text-sm text-gray-500">
+            <Calendar className="w-4 h-4 mr-1" />
+            {activeTab === 'today' && 'Today'}
+            {activeTab === 'thisWeek' && 'This Week'}
+            {activeTab === 'thisMonth' && 'This Month'}
+            {activeTab === 'thisYear' && 'This Year'}
+            {activeTab === 'custom' && 'Custom Period'}
           </div>
         </div>
-
-        {/* Earnings Table */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sr. no.
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Order id
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Order amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Commission from restaurant
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Commission from driver
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date and time
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {/* Empty state */}
-              <tr>
-                <td colSpan={6} className="px-6 py-12 text-center">
-                  <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                      <TrendingUp className="w-8 h-8 text-gray-400" />
-                    </div>
-                    <p className="text-gray-500 text-lg">No data</p>
-                    <p className="text-gray-400 text-sm">No earnings data available for the selected period</p>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mx-auto mb-4">
+              <DollarSign className="w-8 h-8 text-yellow-600" />
+            </div>
+            <h3 className="text-3xl font-bold text-gray-900 mb-2">
+              ${earningsData[activeTab].toLocaleString()}
+            </h3>
+            <p className="text-gray-600">Total Platform Earnings</p>
+          </div>
         </div>
       </div>
 
       {/* Earnings Chart Placeholder */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Earnings Trend</h3>
-        <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
+        <div className="flex items-center justify-center py-12 bg-gray-50 rounded-lg">
           <div className="text-center">
             <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-500">Earnings chart will be displayed here</p>
+            <p className="text-gray-500">Earnings trend chart will be displayed here</p>
           </div>
         </div>
       </div>

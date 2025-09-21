@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Search, Eye, ShoppingCart, MapPin, Clock, DollarSign, MoreVertical } from 'lucide-react'
+import { Search, Eye, ShoppingCart, MapPin, Clock, DollarSign, MoreVertical, RefreshCw, X } from 'lucide-react'
+import { firebaseService } from '../services/firebaseService'
 
 interface Order {
   id: string
@@ -28,384 +29,238 @@ interface OrderItem {
 }
 
 export default function Orders() {
-  const [orders, setOrders] = useState<Order[]>([
-    {
-      id: '1',
-      orderId: '#HFFD9696512',
-      customerName: 'Nehmat Test',
-      orderStatus: 'ready_for_pickup',
-      deliveryAddress: 'C196, Phase 8B, Industrial Area, Sahibzada Ajit Singh Nagar',
-      dateTime: '02 Sep 2025 (4:49PM)',
-      amount: 40,
-      restaurantName: 'City Restaurant',
-      driverName: 'Nehmatt',
-      driverTip: 0,
-      restaurantAddress: 'Teleperformance Mohali, Industrial Area, Sector 75, Sahibzada Ajit Singh Nagar, Punjab 140308, India',
-      receiverName: 'Nehmat Test',
-      receiverPhone: '+919843194643',
-      items: [
-        {
-          name: 'Aalo pyaz parantha ($40)',
-          quantity: 1,
-          variant: 'N/A',
-          addons: 'N/A',
-          cookingRequest: 'N/A',
-          price: 40
-        }
-      ]
-    },
-    {
-      id: '2',
-      orderId: '#HFFD9418880',
-      customerName: 'Anuj Hf',
-      orderStatus: 'confirmed',
-      deliveryAddress: 'C196, Phase 8B, Industrial Area, Sahibzada Ajit Singh Nagar',
-      dateTime: '20 Aug 2025 (6:49AM)',
-      amount: 65,
-      restaurantName: 'Pizza Corner',
-      driverName: 'John Doe',
-      driverTip: 5,
-      restaurantAddress: 'Food Street, Sector 75',
-      receiverName: 'Anuj Hf',
-      receiverPhone: '+919876543210',
-      items: [
-        {
-          name: 'Margherita Pizza',
-          quantity: 1,
-          variant: 'Large',
-          addons: 'Extra Cheese',
-          cookingRequest: 'Well Done',
-          price: 65
-        }
-      ]
-    },
-    {
-      id: '3',
-      orderId: '#HFFD4942976',
-      customerName: 'Shagun Jaswal',
-      orderStatus: 'ready_for_pickup',
-      deliveryAddress: 'C-196A, 4th floor, Industrial Area, Sahibzada Ajit Singh Nagar',
-      dateTime: '11 Aug 2025 (2:29PM)',
-      amount: 120,
-      restaurantName: 'Burger Palace',
-      driverName: 'Mike Smith',
-      driverTip: 10,
-      restaurantAddress: 'Burger Street, Sector 75',
-      receiverName: 'Shagun Jaswal',
-      receiverPhone: '+919876543211',
-      items: [
-        {
-          name: 'Chicken Burger Combo',
-          quantity: 2,
-          variant: 'Spicy',
-          addons: 'Extra Sauce',
-          cookingRequest: 'N/A',
-          price: 120
-        }
-      ]
-    }
-  ])
-
-  const [activeTab, setActiveTab] = useState<'active' | 'delivered' | 'cancelled'>('active')
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
+  const [showOrderModal, setShowOrderModal] = useState(false)
 
-  const filteredOrders = orders.filter(order => {
-    const matchesTab = activeTab === 'active' ? 
-      ['pending', 'confirmed', 'ready_for_pickup'].includes(order.orderStatus) :
-      order.orderStatus === activeTab
-    const matchesSearch = order.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.customerName.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchesTab && matchesSearch
-  })
+  useEffect(() => {
+    loadOrders()
+  }, [])
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'confirmed':
-        return 'bg-blue-100 text-blue-800'
-      case 'ready_for_pickup':
-        return 'bg-orange-100 text-orange-800'
-      case 'delivered':
-        return 'bg-green-100 text-green-800'
-      case 'cancelled':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
+  const loadOrders = async () => {
+    try {
+      setLoading(true)
+      const ordersData = await firebaseService.getOrders()
+      
+      // Get customer and vendor details for each order
+      const ordersWithDetails = await Promise.all(
+        ordersData.map(async (order: any) => {
+          let customerName = 'Unknown Customer'
+          let customerPhone = 'No phone'
+          let restaurantName = 'Unknown Restaurant'
+          
+          try {
+            if (order.userId) {
+              const customer = await firebaseService.getDocument('users', order.userId)
+              customerName = customer.name || 'Unknown Customer'
+              customerPhone = customer.phone || 'No phone'
+            }
+            
+            if (order.vendorId) {
+              const vendor = await firebaseService.getDocument('vendors', order.vendorId)
+              restaurantName = vendor.name || 'Unknown Restaurant'
+            }
+          } catch (error) {
+            console.error('Error loading customer/vendor details:', error)
+          }
+          
+          return {
+            id: order.id,
+            orderId: order.orderNumber || `#${order.id}`,
+            customerName,
+            orderStatus: order.status || 'pending',
+            deliveryAddress: order.deliveryAddress || 'No address',
+            dateTime: order.createdAt?.toDate?.()?.toLocaleString() || 'Unknown date',
+            amount: order.totalAmount || 0,
+            restaurantName,
+            driverName: order.driverName || 'Unassigned',
+            driverTip: order.driverTip || 0,
+            restaurantAddress: order.restaurantAddress || 'No address',
+            receiverName: order.receiverName || customerName,
+            receiverPhone: order.receiverPhone || customerPhone,
+            items: order.items || []
+          }
+        })
+      )
+      
+      setOrders(ordersWithDetails)
+    } catch (error) {
+      console.error('Error loading orders:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'ready_for_pickup':
-        return 'Ready for pickup'
-      case 'confirmed':
-        return 'Order confirmed'
-      default:
-        return status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')
-    }
-  }
-
-  const handleStatusChange = (orderId: string, newStatus: 'delivered' | 'cancelled') => {
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    try {
+      await firebaseService.updateOrderStatus(orderId, newStatus)
+      setOrders(prev => 
+        prev.map(order => 
         order.id === orderId 
-          ? { ...order, orderStatus: newStatus }
+            ? { ...order, orderStatus: newStatus as any }
           : order
       )
     )
-    setOpenDropdown(null)
+    } catch (error) {
+      console.error('Error updating order status:', error)
+    }
   }
 
-  const OrderDetailsModal = ({ order, onClose }: { order: Order, onClose: () => void }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Order Details</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            ×
-          </button>
-        </div>
-        
+  const handleViewOrder = (order: Order) => {
+    setSelectedOrder(order)
+    setShowOrderModal(true)
+  }
+
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         order.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         order.restaurantName.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = statusFilter === 'all' || order.orderStatus === statusFilter
+    return matchesSearch && matchesStatus
+  })
+
+  if (loading) {
+    return (
         <div className="space-y-6">
-          {/* Order Information */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <h5 className="font-medium text-gray-900 mb-3">Order Information</h5>
-              <div className="space-y-2">
-                <div>
-                  <span className="text-sm font-medium text-gray-700">Order ID:</span>
-                  <p className="text-gray-900">{order.orderId}</p>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-700">Status:</span>
-                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ml-2 ${getStatusColor(order.orderStatus)}`}>
-                    {getStatusLabel(order.orderStatus)}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-700">Restaurant:</span>
-                  <p className="text-gray-900">{order.restaurantName}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <h5 className="font-medium text-gray-900 mb-3">Customer Information</h5>
-              <div className="space-y-2">
-                <div>
-                  <span className="text-sm font-medium text-gray-700">Customer:</span>
-                  <p className="text-gray-900">{order.customerName}</p>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-700">Receiver:</span>
-                  <p className="text-gray-900">{order.receiverName}</p>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-700">Phone:</span>
-                  <p className="text-gray-900">{order.receiverPhone}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <h5 className="font-medium text-gray-900 mb-3">Delivery Information</h5>
-              <div className="space-y-2">
-                <div>
-                  <span className="text-sm font-medium text-gray-700">Driver:</span>
-                  <p className="text-gray-900">{order.driverName || 'Not assigned'}</p>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-700">Driver Tip:</span>
-                  <p className="text-gray-900">${order.driverTip}</p>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-700">Date & Time:</span>
-                  <p className="text-gray-900">{order.dateTime}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Addresses */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h5 className="font-medium text-gray-900 mb-3">Restaurant Address</h5>
-              <p className="text-sm text-gray-700">{order.restaurantAddress}</p>
-            </div>
-            <div>
-              <h5 className="font-medium text-gray-900 mb-3">Delivery Address</h5>
-              <p className="text-sm text-gray-700">{order.deliveryAddress}</p>
-            </div>
-          </div>
-          
-          {/* Order Items */}
-          <div>
-            <h5 className="font-medium text-gray-900 mb-3">Cart Items</h5>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variant</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Add-ons</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cooking Request</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {order.items.map((item, index) => (
-                    <tr key={index}>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{item.name}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{item.quantity}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{item.variant}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{item.addons}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{item.cookingRequest}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${item.price}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
       </div>
     </div>
   )
+  }
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
-        <p className="text-gray-600 mt-1">Manage and track customer orders</p>
+          <p className="text-gray-600 mt-1">Manage orders from Firebase</p>
       </div>
-
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {[
-            { key: 'active', label: 'Active' },
-            { key: 'delivered', label: 'Delivered' },
-            { key: 'cancelled', label: 'Cancelled' }
-          ].map((tab) => (
             <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key as any)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab.key
-                  ? 'border-yellow-500 text-yellow-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {tab.label}
+          onClick={loadOrders}
+          className="flex items-center px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh
             </button>
-          ))}
-        </nav>
       </div>
 
-      {/* Search */}
-      <div className="flex items-center space-x-4">
-        <div className="flex-1 relative">
+      {/* Search and Filter */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
             type="text"
-            placeholder="Search by order id"
+              placeholder="Search orders..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
-          />
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+          >
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="preparing">Preparing</option>
+            <option value="ready_for_pickup">Ready for Pickup</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
         </div>
       </div>
 
-      {/* Table */}
+      {/* Orders Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sr. no.
+                  Order ID
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Order id
+                  Customer
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer name
+                  Restaurant
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Order status
+                  Amount
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Delivery address
+                  Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date and time
+                  Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Action
+                  Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredOrders.map((order, index) => (
+              {filteredOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {index + 1}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {order.orderId}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {order.customerName}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{order.orderId}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.orderStatus)}`}>
-                      {getStatusLabel(order.orderStatus)}
+                    <div className="text-sm text-gray-900">{order.customerName}</div>
+                    <div className="text-sm text-gray-500">{order.receiverPhone}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{order.restaurantName}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">${order.amount}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      order.orderStatus === 'delivered' 
+                        ? 'bg-green-100 text-green-800'
+                        : order.orderStatus === 'cancelled'
+                        ? 'bg-red-100 text-red-800'
+                        : order.orderStatus === 'ready_for_pickup'
+                        ? 'bg-blue-100 text-blue-800'
+                        : order.orderStatus === 'confirmed'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {order.orderStatus.replace('_', ' ')}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                    {order.deliveryAddress}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {order.dateTime}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex space-x-2">
                       <button
-                        onClick={() => setSelectedOrder(order)}
-                        className="w-8 h-8 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center hover:bg-yellow-200 transition-colors"
+                        onClick={() => handleViewOrder(order)}
+                        className="text-blue-600 hover:text-blue-900"
+                        title="View Order Details"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <div className="relative">
-                        <button
-                          onClick={() => setOpenDropdown(openDropdown === order.id ? null : order.id)}
-                          className="w-8 h-8 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center hover:bg-yellow-200 transition-colors"
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-                        {openDropdown === order.id && (
-                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                            <div className="py-1">
-                              <button
-                                onClick={() => handleStatusChange(order.id, 'delivered')}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              >
-                                Delivered
-                              </button>
-                              <button
-                                onClick={() => handleStatusChange(order.id, 'cancelled')}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              >
-                                Cancelled
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      <select
+                        value={order.orderStatus}
+                        onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                        className="text-sm border border-gray-300 rounded px-2 py-1"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="preparing">Preparing</option>
+                        <option value="ready_for_pickup">Ready</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
                     </div>
                   </td>
                 </tr>
@@ -413,14 +268,134 @@ export default function Orders() {
             </tbody>
           </table>
         </div>
+        
+        {filteredOrders.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-gray-500">No orders found</div>
+          </div>
+        )}
       </div>
 
       {/* Order Details Modal */}
-      {selectedOrder && (
-        <OrderDetailsModal 
-          order={selectedOrder} 
-          onClose={() => setSelectedOrder(null)} 
-        />
+      {showOrderModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Order Details</h3>
+              <button
+                onClick={() => setShowOrderModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* Order Header */}
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Order ID</label>
+                    <p className="text-sm text-gray-900">{selectedOrder.orderId}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Customer</label>
+                    <p className="text-sm text-gray-900">{selectedOrder.customerName}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Receiver</label>
+                    <p className="text-sm text-gray-900">{selectedOrder.receiverName}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Phone</label>
+                    <p className="text-sm text-gray-900">{selectedOrder.receiverPhone}</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Restaurant</label>
+                    <p className="text-sm text-gray-900">{selectedOrder.restaurantName}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Driver</label>
+                    <p className="text-sm text-gray-900">{selectedOrder.driverName || 'Not assigned'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Total Amount</label>
+                    <p className="text-sm text-gray-900 font-semibold">${selectedOrder.amount}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Status</label>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      selectedOrder.orderStatus === 'delivered' 
+                        ? 'bg-green-100 text-green-800'
+                        : selectedOrder.orderStatus === 'cancelled'
+                        ? 'bg-red-100 text-red-800'
+                        : selectedOrder.orderStatus === 'ready_for_pickup'
+                        ? 'bg-blue-100 text-blue-800'
+                        : selectedOrder.orderStatus === 'confirmed'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {selectedOrder.orderStatus.replace('_', ' ')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Delivery Address */}
+              <div>
+                <label className="text-sm font-medium text-gray-500">Delivery Address</label>
+                <p className="text-sm text-gray-900">{selectedOrder.deliveryAddress}</p>
+              </div>
+
+              {/* Order Items */}
+              <div>
+                <label className="text-sm font-medium text-gray-500 mb-3 block">Order Items</label>
+                <div className="space-y-3">
+                  {selectedOrder.items.map((item, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{item.name}</h4>
+                          <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
+                          {item.variant && (
+                            <p className="text-sm text-gray-500">Variant: {item.variant}</p>
+                          )}
+                          {item.addons && (
+                            <p className="text-sm text-gray-500">Add-ons: {item.addons}</p>
+                          )}
+                          {item.cookingRequest && (
+                            <p className="text-sm text-gray-500">Special Request: {item.cookingRequest}</p>
+                          )}
+                        </div>
+                        <div className="text-sm font-medium text-gray-900">
+                          ${item.price}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Order Date */}
+              <div>
+                <label className="text-sm font-medium text-gray-500">Order Date</label>
+                <p className="text-sm text-gray-900">{selectedOrder.dateTime}</p>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowOrderModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

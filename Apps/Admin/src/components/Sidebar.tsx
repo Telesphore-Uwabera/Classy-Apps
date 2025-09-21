@@ -41,6 +41,8 @@ const menuItems: MenuItem[] = [
   { name: 'Restaurants', href: '/restaurants', icon: Building2 },
   { name: 'Restaurants Requested', href: '/restaurants-requested', icon: Building2 },
   { name: 'Restaurants Docs Updated', href: '/restaurants-docs-updated', icon: FileCheck },
+  { name: 'Vendors', href: '/vendors', icon: Building2 },
+  { name: 'Vendors Requested', href: '/vendors-requested', icon: Building2 },
   { name: 'Drivers', href: '/drivers', icon: Car },
   { name: 'Drivers Requested', href: '/drivers-requested', icon: Car },
   { name: 'Drivers Docs Updated', href: '/drivers-docs-updated', icon: FileCheck },

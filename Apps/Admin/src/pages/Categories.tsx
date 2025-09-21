@@ -1,105 +1,109 @@
 import { useState, useEffect } from 'react'
-import { Search, Plus, Edit, Trash2, Tag } from 'lucide-react'
+import { Search, Plus, Edit, Trash2, Tag, RefreshCw } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { firebaseService } from '../services/firebaseService'
 
 interface Category {
   id: string
   name: string
   image: string
   createdAt: string
+  description?: string
+  isActive?: boolean
 }
 
 export default function Categories() {
   const navigate = useNavigate()
-  const [categories, setCategories] = useState<Category[]>([
-    {
-      id: '1',
-      name: 'Main Course',
-      image: '/api/placeholder/64/64',
-      createdAt: '14 Aug 2025'
-    },
-    {
-      id: '2',
-      name: 'Desserts',
-      image: '/api/placeholder/64/64',
-      createdAt: '26 Apr 2025'
-    },
-    {
-      id: '3',
-      name: 'Breakfast',
-      image: '/api/placeholder/64/64',
-      createdAt: '26 Apr 2025'
-    },
-    {
-      id: '4',
-      name: 'Burger',
-      image: '/api/placeholder/64/64',
-      createdAt: '26 Apr 2025'
-    },
-    {
-      id: '5',
-      name: 'Pasta',
-      image: '/api/placeholder/64/64',
-      createdAt: '26 Apr 2025'
-    },
-    {
-      id: '6',
-      name: 'Chicken',
-      image: '/api/placeholder/64/64',
-      createdAt: '26 Apr 2025'
-    }
-  ])
-
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+
+  useEffect(() => {
+    loadCategories()
+  }, [])
+
+  const loadCategories = async () => {
+    try {
+      setLoading(true)
+      const categoriesData = await firebaseService.getCategories()
+      
+      const categoriesWithDetails = categoriesData.map((category: any) => ({
+        id: category.id,
+        name: category.name || 'Unnamed Category',
+        image: category.image || '/api/placeholder/64/64',
+        createdAt: category.createdAt?.toDate?.()?.toLocaleDateString() || 'Unknown',
+        description: category.description || '',
+        isActive: category.isActive !== false
+      }))
+      
+      setCategories(categoriesWithDetails)
+    } catch (error) {
+      console.error('Error loading categories:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const deleteCategory = async (categoryId: string) => {
+    if (window.confirm('Are you sure you want to delete this category?')) {
+      try {
+        await firebaseService.deleteDocument('categories', categoryId)
+        setCategories(prev => prev.filter(category => category.id !== categoryId))
+      } catch (error) {
+        console.error('Error deleting category:', error)
+      }
+    }
+  }
 
   const filteredCategories = categories.filter(category =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const handleAddCategory = () => {
-    navigate('/categories/new')
-  }
-
-  const handleEditCategory = (categoryId: string) => {
-    navigate(`/categories/${categoryId}/edit`)
-  }
-
-  const handleDeleteCategory = (categoryId: string) => {
-    if (window.confirm('Are you sure you want to delete this category?')) {
-      setCategories(prevCategories => 
-        prevCategories.filter(category => category.id !== categoryId)
-      )
-    }
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Categories</h1>
-          <p className="text-gray-600 mt-1">Manage food categories and classifications</p>
+          <p className="text-gray-600 mt-1">Manage food categories from Firebase</p>
         </div>
-        <button
-          onClick={handleAddCategory}
-          className="flex items-center px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add
-        </button>
+        <div className="flex space-x-2">
+          <button 
+            onClick={loadCategories}
+            className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </button>
+          <button 
+            onClick={() => navigate('/categories/add')}
+            className="flex items-center px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Category
+          </button>
+        </div>
       </div>
 
       {/* Search */}
-      <div className="flex items-center space-x-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Search by category name"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
-          />
-        </div>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <input
+          type="text"
+          placeholder="Search by category name"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+        />
       </div>
 
       {/* Categories Table */}
@@ -109,16 +113,19 @@ export default function Categories() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sr. no.
+                  SR. NO.
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
+                  NAME
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created at
+                  STATUS
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Action
+                  CREATED AT
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ACTION
                 </th>
               </tr>
             </thead>
@@ -130,26 +137,44 @@ export default function Categories() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center mr-3">
-                        <Tag className="w-5 h-5 text-gray-600" />
+                      <div className="flex-shrink-0 h-8 w-8">
+                        <div className="h-8 w-8 rounded-full bg-pink-100 flex items-center justify-center">
+                          <Tag className="w-4 h-4 text-pink-600" />
+                        </div>
                       </div>
-                      <span className="text-sm font-medium text-gray-900">{category.name}</span>
+                      <div className="ml-3">
+                        <div className="text-sm font-medium text-gray-900">{category.name}</div>
+                        {category.description && (
+                          <div className="text-sm text-gray-500">{category.description}</div>
+                        )}
+                      </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      category.isActive 
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {category.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {category.createdAt}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleEditCategory(category.id)}
-                        className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-200 transition-colors"
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => navigate(`/categories/${category.id}/edit`)}
+                        className="text-blue-600 hover:text-blue-900"
+                        title="Edit Category"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button
-                        onClick={() => handleDeleteCategory(category.id)}
-                        className="w-8 h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200 transition-colors"
+                      <button 
+                        onClick={() => deleteCategory(category.id)}
+                        className="text-red-600 hover:text-red-900"
+                        title="Delete Category"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -160,6 +185,12 @@ export default function Categories() {
             </tbody>
           </table>
         </div>
+        
+        {filteredCategories.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-gray-500">No categories found</div>
+          </div>
+        )}
       </div>
     </div>
   )

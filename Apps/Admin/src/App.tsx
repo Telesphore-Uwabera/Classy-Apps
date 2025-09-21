@@ -8,6 +8,9 @@ import QuickPicks from './pages/QuickPicks'
 import QuickPicksEditor from './pages/QuickPicksEditor'
 import Restaurants from './pages/Restaurants'
 import RestaurantsRequested from './pages/RestaurantsRequested'
+import Vendors from './pages/Vendors'
+import VendorsRequested from './pages/VendorsRequested'
+import VendorDetails from './pages/VendorDetails'
 import RestaurantDetails from './pages/RestaurantDetails'
 import RestaurantsDocsUpdated from './pages/RestaurantsDocsUpdated'
 import Drivers from './pages/Drivers'
@@ -23,6 +26,7 @@ import Categories from './pages/Categories'
 import CategoryEditor from './pages/CategoryEditor'
 import Coupons from './pages/Coupons'
 import ContentPages from './pages/ContentPages'
+import ContentPageViewer from './pages/ContentPageViewer'
 import ContentPageEditor from './pages/ContentPageEditor'
 import Complaints from './pages/Complaints'
 import ContactUs from './pages/ContactUs'
@@ -59,6 +63,9 @@ function AppRoutes() {
         <Route path="restaurants" element={<Restaurants />} />
         <Route path="restaurants-requested" element={<RestaurantsRequested />} />
         <Route path="restaurants-requested/:id/view" element={<RestaurantDetails />} />
+            <Route path="vendors" element={<Vendors />} />
+            <Route path="vendors-requested" element={<VendorsRequested />} />
+            <Route path="vendors-requested/:id/view" element={<VendorDetails />} />
         <Route path="restaurants-docs-updated" element={<RestaurantsDocsUpdated />} />
         <Route path="drivers" element={<Drivers />} />
         <Route path="drivers-requested" element={<DriversRequested />} />
@@ -72,9 +79,12 @@ function AppRoutes() {
         <Route path="categories" element={<Categories />} />
         <Route path="categories/:id/edit" element={<CategoryEditor />} />
         <Route path="categories/new" element={<CategoryEditor />} />
+        <Route path="categories/add" element={<CategoryEditor />} />
         <Route path="coupons" element={<Coupons />} />
         <Route path="contents" element={<ContentPages />} />
+        <Route path="contents/:id" element={<ContentPageViewer />} />
         <Route path="contents/:id/edit" element={<ContentPageEditor />} />
+        <Route path="contents/add" element={<ContentPageEditor />} />
         <Route path="complaints" element={<Complaints />} />
         <Route path="contact-us" element={<ContactUs />} />
         <Route path="faqs" element={<FAQs />} />

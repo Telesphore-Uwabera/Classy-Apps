@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Send, Users, Mail, Smartphone } from 'lucide-react'
+import { Send, Users, Mail, Smartphone, RefreshCw } from 'lucide-react'
+import { firebaseService } from '../services/firebaseService'
 
 export default function CloudMessaging() {
   const [formData, setFormData] = useState({
@@ -10,7 +11,37 @@ export default function CloudMessaging() {
   })
 
   const [characterCount, setCharacterCount] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [userCounts, setUserCounts] = useState({
+    customers: 0,
+    drivers: 0,
+    vendors: 0,
+    all: 0
+  })
   const maxCharacters = 120
+
+  useEffect(() => {
+    loadUserCounts()
+  }, [])
+
+  const loadUserCounts = async () => {
+    try {
+      const [customers, drivers, vendors] = await Promise.all([
+        firebaseService.getCustomers(),
+        firebaseService.getDrivers(),
+        firebaseService.getVendors()
+      ])
+      
+      setUserCounts({
+        customers: customers.length,
+        drivers: drivers.length,
+        vendors: vendors.length,
+        all: customers.length + drivers.length + vendors.length
+      })
+    } catch (error) {
+      console.error('Error loading user counts:', error)
+    }
+  }
 
   const handleInputChange = (field: string, value: string) => {
     if (field === 'description') {
@@ -23,19 +54,57 @@ export default function CloudMessaging() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Implement send notification functionality
-    console.log('Sending notification:', formData)
+    setLoading(true)
+    
+    try {
+      // Send notification to Firebase
+      const notificationData = {
+        title: formData.title,
+        description: formData.description,
+        targetUsers: formData.selectedUsers,
+        method: formData.notificationMethod,
+        sentAt: new Date(),
+        sentBy: 'admin'
+      }
+      
+      await firebaseService.sendNotification(notificationData)
+      
+      // Reset form
+      setFormData({
+        selectedUsers: '',
+        notificationMethod: '',
+        title: '',
+        description: ''
+      })
+      setCharacterCount(0)
+      
+      alert('Notification sent successfully!')
+    } catch (error) {
+      console.error('Error sending notification:', error)
+      alert('Failed to send notification. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const isFormValid = formData.selectedUsers && formData.notificationMethod && formData.title && formData.description
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Cloud Messaging</h1>
-        <p className="text-gray-600 mt-1">Send notifications to users via push notifications or email</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Cloud Messaging</h1>
+          <p className="text-gray-600 mt-1">Send notifications to users via Firebase Cloud Messaging</p>
+        </div>
+        <button 
+          onClick={loadUserCounts}
+          className="flex items-center px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh Counts
+        </button>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -47,12 +116,10 @@ export default function CloudMessaging() {
             </label>
             <div className="space-y-2">
               {[
-                { value: 'customers', label: 'Customers', icon: Users },
-                { value: 'drivers', label: 'Drivers', icon: Users },
-                { value: 'vendors', label: 'Vendors', icon: Users },
-                { value: 'particular_customer', label: 'Particular customer', icon: Users },
-                { value: 'particular_driver', label: 'Particular driver', icon: Users },
-                { value: 'particular_vendor', label: 'Particular vendor', icon: Users }
+                { value: 'customers', label: 'Customers', icon: Users, count: userCounts.customers },
+                { value: 'drivers', label: 'Drivers', icon: Users, count: userCounts.drivers },
+                { value: 'vendors', label: 'Vendors', icon: Users, count: userCounts.vendors },
+                { value: 'all', label: 'All Users', icon: Users, count: userCounts.all }
               ].map((option) => {
                 const Icon = option.icon
                 return (
@@ -139,11 +206,20 @@ export default function CloudMessaging() {
           <div className="flex justify-end">
             <button
               type="submit"
-              disabled={!isFormValid}
-              className="flex items-center px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              disabled={!isFormValid || loading}
+              className="flex items-center px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <Send className="w-4 h-4 mr-2" />
-              Send Notification
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Send Notification
+                </>
+              )}
             </button>
           </div>
         </form>

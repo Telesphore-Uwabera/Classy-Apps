@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'
+import { auth } from '../config/firebase'
 
 interface User {
   id: string
@@ -22,37 +24,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check if user is logged in on app start
-    const savedUser = localStorage.getItem('admin_user')
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
-    }
-    setLoading(false)
+    // Listen for Firebase auth state changes
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        const userData = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || 'Admin User',
+          email: firebaseUser.email || '',
+          role: 'admin'
+        }
+        setUser(userData)
+      } else {
+        setUser(null)
+      }
+      setLoading(false)
+    })
+
+    return () => unsubscribe()
   }, [])
 
   const login = async (email: string, password: string) => {
     try {
-      // Mock login - replace with actual API call
-      if (email === 'admin@classy.com' && password === 'admin123') {
-        const userData = {
-          id: '1',
-          name: 'Admin User',
-          email: 'admin@classy.com',
-          role: 'admin'
-        }
-        setUser(userData)
-        localStorage.setItem('admin_user', JSON.stringify(userData))
-      } else {
-        throw new Error('Invalid credentials')
-      }
+      await signInWithEmailAndPassword(auth, email, password)
+      // User state will be updated by onAuthStateChanged
     } catch (error) {
-      throw error
+      console.error('Login error:', error)
+      throw new Error('Invalid credentials')
     }
   }
 
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem('admin_user')
+  const logout = async () => {
+    try {
+      await signOut(auth)
+      // User state will be updated by onAuthStateChanged
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
   }
 
   const value = {

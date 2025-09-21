@@ -1,110 +1,95 @@
-import { useState } from 'react'
-import { ArrowLeft, Save, Eye } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ArrowLeft, Save, Eye, RefreshCw } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { firebaseService } from '../services/firebaseService'
 
 export default function ContentPageEditor() {
   const navigate = useNavigate()
   const { id } = useParams()
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   
-  // Mock content data - in real app, fetch based on id
-  const contentData = {
-    '1': {
-      title: 'About us',
-      content: `Henceforth Solutions specializes in innovative, user-centric applications for industries like transportation, food delivery, and logistics. Our suite of apps, including HF Taxi, HF Food Delivery, HF Food Delivery Partner, and HF Food Delivery Driver, reflects our commitment to convenience and connectivity.
+  const [contentData, setContentData] = useState({
+    title: '',
+    content: '',
+    type: 'customer',
+    isActive: true,
+    slug: ''
+  })
 
-Our Mission:
-To develop intuitive, reliable, and impactful digital solutions that enhance user experiences and streamline operations across various industries.
+  const [isPreview, setIsPreview] = useState(false)
 
-Our Vision:
-To be a leader in technology innovation, creating seamless digital experiences that connect people, businesses, and services.
+  useEffect(() => {
+    if (id && id !== 'add') {
+      loadContentPage()
+    } else {
+      setLoading(false)
+    }
+  }, [id])
 
-Why Choose Us?
-• User-Centric Design: We prioritize ease of use and functionality.
-• Tailored Solutions: Every app is crafted with the unique needs of its users in mind.
-• Commitment to Excellence: We strive for quality in every aspect of our work.
-• Seamless Integration: Our platforms connect users, partners, and service providers effortlessly.
-
-Let's build a smarter, more connected future together with Henceforth Solutions.`
-    },
-    '2': {
-      title: 'Privacy Policy',
-      content: `Privacy Policy for Classy Apps
-
-Last updated: [Date]
-
-1. Information We Collect
-We collect information you provide directly to us, such as when you create an account, use our services, or contact us for support.
-
-2. How We Use Your Information
-We use the information we collect to provide, maintain, and improve our services, process transactions, and communicate with you.
-
-3. Information Sharing
-We do not sell, trade, or otherwise transfer your personal information to third parties without your consent, except as described in this policy.
-
-4. Data Security
-We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.
-
-5. Your Rights
-You have the right to access, update, or delete your personal information. You may also opt out of certain communications from us.
-
-6. Changes to This Policy
-We may update this privacy policy from time to time. We will notify you of any changes by posting the new policy on this page.
-
-7. Contact Us
-If you have any questions about this privacy policy, please contact us at privacy@classy.com.`
-    },
-    '3': {
-      title: 'Terms & Conditions',
-      content: `Terms and Conditions for Classy Apps
-
-Last updated: [Date]
-
-1. Acceptance of Terms
-By accessing and using our services, you accept and agree to be bound by the terms and provision of this agreement.
-
-2. Use License
-Permission is granted to temporarily download one copy of our app for personal, non-commercial transitory viewing only.
-
-3. Disclaimer
-The materials on our app are provided on an 'as is' basis. We make no warranties, expressed or implied, and hereby disclaim and negate all other warranties.
-
-4. Limitations
-In no event shall Classy or its suppliers be liable for any damages arising out of the use or inability to use the materials on our app.
-
-5. Accuracy of Materials
-The materials appearing on our app could include technical, typographical, or photographic errors. We do not warrant that any of the materials are accurate, complete, or current.
-
-6. Links
-We have not reviewed all of the sites linked to our app and are not responsible for the contents of any such linked site.
-
-7. Modifications
-We may revise these terms of service for our app at any time without notice. By using this app, you are agreeing to be bound by the then current version of these terms.
-
-8. Governing Law
-These terms and conditions are governed by and construed in accordance with the laws of Uganda.
-
-9. Contact Information
-If you have any questions about these Terms and Conditions, please contact us at legal@classy.com.`
+  const loadContentPage = async () => {
+    try {
+      setLoading(true)
+      const page = await firebaseService.getDocument('content_pages', id!)
+      
+      if (page) {
+        setContentData({
+          title: page.title || '',
+          content: page.content || '',
+          type: page.type || 'customer',
+          isActive: page.isActive !== false,
+          slug: page.slug || ''
+        })
+      }
+    } catch (error) {
+      console.error('Error loading content page:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const currentContent = contentData[id as keyof typeof contentData] || {
-    title: 'New Page',
-    content: ''
-  }
-
-  const [content, setContent] = useState(currentContent.content)
-  const [isPreview, setIsPreview] = useState(false)
-
-  const handleSave = () => {
-    // Handle save logic
-    console.log('Saving content:', content)
-    // Navigate back to content pages
-    navigate('/content-pages')
+  const handleSave = async () => {
+    try {
+      setSaving(true)
+      
+      const pageToSave = {
+        ...contentData,
+        updatedAt: new Date()
+      }
+      
+      if (id === 'add') {
+        // Create new page
+        pageToSave.createdAt = new Date()
+        pageToSave.slug = contentData.title.toLowerCase().replace(/\s+/g, '-')
+        await firebaseService.addDocument('content_pages', pageToSave)
+        alert('Content page created successfully!')
+      } else {
+        // Update existing page
+        await firebaseService.updateDocument('content_pages', id!, pageToSave)
+        alert('Content page updated successfully!')
+      }
+      
+      navigate('/contents')
+    } catch (error) {
+      console.error('Error saving content page:', error)
+      alert('Error saving content page')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handlePreview = () => {
     setIsPreview(!isPreview)
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -113,85 +98,195 @@ If you have any questions about these Terms and Conditions, please contact us at
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => navigate('/content-pages')}
+            onClick={() => navigate('/contents')}
             className="flex items-center text-gray-600 hover:text-gray-900"
           >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Back
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Content Pages
           </button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{currentContent.title}</h1>
-            <p className="text-gray-600 mt-1">Edit and manage content for this page</p>
-          </div>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex space-x-2">
           <button
             onClick={handlePreview}
-            className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
           >
             <Eye className="w-4 h-4 mr-2" />
             {isPreview ? 'Edit' : 'Preview'}
           </button>
           <button
             onClick={handleSave}
-            className="flex items-center px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
+            disabled={saving}
+            className="flex items-center px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors disabled:opacity-50"
           >
             <Save className="w-4 h-4 mr-2" />
-            Save Changes
+            {saving ? 'Saving...' : 'Save Page'}
           </button>
         </div>
       </div>
 
-      {/* Content Editor */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        {isPreview ? (
-          <div className="p-6">
-            <div className="prose max-w-none">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">{currentContent.title}</h2>
-              <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-                {content}
+      {/* Page Title */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">
+          {id === 'add' ? 'Add New Content Page' : 'Edit Content Page'}
+        </h1>
+        <p className="text-gray-600 mt-1">
+          {id === 'add' ? 'Create a new content page' : 'Edit content page details'}
+        </p>
               </div>
-            </div>
-          </div>
-        ) : (
-          <div className="p-6">
+
+      {!isPreview ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Form */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Basic Information */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+              
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Page Title
+                    Page Title *
                 </label>
                 <input
                   type="text"
-                  value={currentContent.title}
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
-                />
+                    value={contentData.title}
+                    onChange={(e) => setContentData(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    placeholder="Enter page title"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Page Type
+                  </label>
+                  <select
+                    value={contentData.type}
+                    onChange={(e) => setContentData(prev => ({ ...prev, type: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  >
+                    <option value="customer">Customer</option>
+                    <option value="driver">Driver</option>
+                    <option value="vendor">Vendor</option>
+                    <option value="general">General</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="isActive"
+                    checked={contentData.isActive}
+                    onChange={(e) => setContentData(prev => ({ ...prev, isActive: e.target.checked }))}
+                    className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
+                    Active (visible to users)
+                  </label>
+                </div>
               </div>
+            </div>
+
+            {/* Content */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Content</h3>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Content
+                  Page Content *
                 </label>
                 <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  rows={20}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 resize-none"
-                  placeholder="Enter your content here..."
+                  value={contentData.content}
+                  onChange={(e) => setContentData(prev => ({ ...prev, content: e.target.value }))}
+                  rows={15}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  placeholder="Enter page content (supports markdown)"
+                  required
                 />
+                <p className="text-sm text-gray-500 mt-2">
+                  You can use basic HTML tags or markdown formatting.
+                </p>
               </div>
-              <div className="text-sm text-gray-500">
-                <p>Tips:</p>
-                <ul className="list-disc list-inside mt-1 space-y-1">
-                  <li>Use line breaks to separate paragraphs</li>
-                  <li>Use bullet points (•) for lists</li>
-                  <li>Use bold text (**text**) for emphasis</li>
-                  <li>Preview your changes before saving</li>
-                </ul>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Page Info */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Page Information</h3>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">URL Slug</label>
+                  <p className="text-sm text-gray-900">
+                    {contentData.title ? `/${contentData.title.toLowerCase().replace(/\s+/g, '-')}` : '/page-slug'}
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Status</label>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    contentData.isActive 
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {contentData.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Type</label>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    contentData.type === 'customer' ? 'bg-blue-100 text-blue-800' :
+                    contentData.type === 'driver' ? 'bg-green-100 text-green-800' :
+                    contentData.type === 'vendor' ? 'bg-purple-100 text-purple-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {contentData.type.charAt(0).toUpperCase() + contentData.type.slice(1)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
+              
+              <div className="space-y-2">
+                <button
+                  onClick={handleSave}
+                  disabled={saving || !contentData.title || !contentData.content}
+                  className="w-full flex items-center justify-center px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {saving ? 'Saving...' : 'Save Page'}
+                </button>
+                
+                <button
+                  onClick={() => navigate('/contents')}
+                  className="w-full flex items-center justify-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Preview */
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview</h3>
+          
+          <div className="prose max-w-none">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">{contentData.title}</h1>
+            <div className="text-gray-700 whitespace-pre-wrap">
+              {contentData.content || 'No content to preview'}
               </div>
             </div>
           </div>
         )}
-      </div>
     </div>
   )
 }

@@ -1,97 +1,142 @@
-import { useState } from 'react'
-import { Building2, Check, X, Eye, Search, Filter } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Building2, Check, X, Eye, Search, RefreshCw } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { firebaseService } from '../services/firebaseService'
+import { COLLECTIONS } from '../config/firebase'
+
+interface RestaurantRequest {
+  id: string
+  restaurantName: string
+  ownerName: string
+  email: string
+  phone: string
+  address: string
+  cuisine: string
+  status: string
+  submittedDate: string
+  documents: string[]
+}
 
 export default function RestaurantsRequested() {
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [requests, setRequests] = useState<RestaurantRequest[]>([])
+  const [loading, setLoading] = useState(true)
   
-  const [requests] = useState([
-    {
-      id: 1,
-      restaurantName: 'Bella Vista Restaurant',
-      ownerName: 'John Smith',
-      email: 'john@bellavista.com',
-      phone: '+1 (555) 123-4567',
-      address: '123 Main St, New York, NY',
-      cuisine: 'Italian',
-      status: 'pending',
-      submittedDate: '2025-01-15',
-      documents: ['Business License', 'Health Certificate', 'Insurance']
-    },
-    {
-      id: 2,
-      restaurantName: 'Spice Garden',
-      ownerName: 'Maria Garcia',
-      email: 'maria@spicegarden.com',
-      phone: '+1 (555) 987-6543',
-      address: '456 Oak Ave, Los Angeles, CA',
-      cuisine: 'Indian',
-      status: 'approved',
-      submittedDate: '2025-01-14',
-      documents: ['Business License', 'Health Certificate']
-    },
-    {
-      id: 3,
-      restaurantName: 'Sushi Master',
-      ownerName: 'Takeshi Yamamoto',
-      email: 'takeshi@sushimaster.com',
-      phone: '+1 (555) 456-7890',
-      address: '789 Pine St, San Francisco, CA',
-      cuisine: 'Japanese',
-      status: 'rejected',
-      submittedDate: '2025-01-13',
-      documents: ['Business License']
+  useEffect(() => {
+    loadPendingRestaurants()
+  }, [])
+
+  const loadPendingRestaurants = async () => {
+    try {
+      setLoading(true)
+      
+      // Filter for pending restaurants ONLY (not vendors)
+      const allRestaurants = await firebaseService.getCollection(COLLECTIONS.RESTAURANTS).catch(() => [])
+      
+      // Only filter restaurants collection for pending restaurants
+      const pendingRestaurants = allRestaurants.filter(restaurant => 
+        restaurant.status === 'pending' || 
+        restaurant.status === 'offline' || // Firebase uses 'offline' for pending
+        (restaurant.status !== 'active' && restaurant.status !== 'approved' && restaurant.is_active !== true)
+      )
+      
+      const restaurantsWithDetails = pendingRestaurants.map((restaurant: any) => ({
+        id: restaurant.id,
+        restaurantName: restaurant.name || restaurant.businessName || 'Unknown Restaurant',
+        ownerName: restaurant.ownerName || restaurant.email || 'Unknown Owner',
+        email: restaurant.email || restaurant.ownerEmail || 'No email',
+        phone: restaurant.phone || 'No phone',
+        address: restaurant.address || 'No address',
+        cuisine: restaurant.cuisine || restaurant.category_id || 'Not specified',
+        status: restaurant.status || 'pending',
+        submittedDate: restaurant.created_at?.toDate?.()?.toLocaleDateString() || 
+                      restaurant.createdAt?.toDate?.()?.toLocaleDateString() || 'Unknown',
+        documents: restaurant.documents || []
+      }))
+      
+      setRequests(restaurantsWithDetails)
+    } catch (error) {
+      console.error('Error loading pending restaurants:', error)
+    } finally {
+      setLoading(false)
     }
-  ])
+  }
+
+  const handleApprove = async (restaurantId: string) => {
+    try {
+      await firebaseService.updateVendorStatus(restaurantId, 'active')
+      setRequests(prev => prev.filter(request => request.id !== restaurantId))
+    } catch (error) {
+      console.error('Error approving restaurant:', error)
+    }
+  }
+
+  const handleReject = async (restaurantId: string) => {
+    try {
+      await firebaseService.updateVendorStatus(restaurantId, 'blocked')
+      setRequests(prev => prev.filter(request => request.id !== restaurantId))
+    } catch (error) {
+      console.error('Error rejecting restaurant:', error)
+    }
+  }
 
   const filteredRequests = requests.filter(request => {
     const matchesSearch = request.restaurantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         request.ownerName.toLowerCase().includes(searchTerm.toLowerCase())
+                         request.ownerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         request.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         request.address.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === 'all' || request.status === statusFilter
     return matchesSearch && matchesStatus
   })
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'approved': return 'bg-green-100 text-green-800'
-      case 'rejected': return 'bg-red-100 text-red-800'
-      case 'pending': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Restaurants Requested</h1>
-        <p className="text-gray-600 mt-1">Review and manage restaurant registration requests</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Restaurant Requests</h1>
+          <p className="text-gray-600 mt-1">Review and approve pending restaurant applications from Firebase</p>
+        </div>
+        <button 
+          onClick={loadPendingRestaurants}
+          className="flex items-center px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh
+        </button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Search restaurants..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-          />
-        </div>
-        <div className="flex items-center space-x-2">
-          <Filter className="w-4 h-4 text-gray-400" />
+      {/* Search and Filter */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search restaurants..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+            />
+          </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
           >
-            <option value="all">All Status</option>
             <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
+            <option value="all">All Status</option>
           </select>
         </div>
       </div>
@@ -99,8 +144,8 @@ export default function RestaurantsRequested() {
       {/* Requests Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Restaurant
@@ -109,13 +154,13 @@ export default function RestaurantsRequested() {
                   Owner
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Contact
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Cuisine
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Submitted
+                  Submitted Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -126,47 +171,56 @@ export default function RestaurantsRequested() {
               {filteredRequests.map((request) => (
                 <tr key={request.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{request.restaurantName}</div>
-                      <div className="text-sm text-gray-500">{request.address}</div>
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        <div className="h-10 w-10 rounded-full bg-pink-100 flex items-center justify-center">
+                          <Building2 className="w-5 h-5 text-pink-600" />
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">{request.restaurantName}</div>
+                        <div className="text-sm text-gray-500">{request.address}</div>
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{request.ownerName}</div>
-                      <div className="text-sm text-gray-500">{request.email}</div>
-                      <div className="text-sm text-gray-500">{request.phone}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {request.cuisine}
+                    <div className="text-sm text-gray-900">{request.ownerName}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(request.status)}`}>
-                      {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                    <div className="text-sm text-gray-900">{request.email}</div>
+                    <div className="text-sm text-gray-500">{request.phone}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {request.cuisine}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(request.submittedDate).toLocaleDateString()}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {request.submittedDate}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
                       <button 
-                        onClick={() => navigate(`/restaurants-requested/${request.id}/view`)}
-                        className="text-pink-600 hover:text-pink-900"
+                        onClick={() => navigate(`/restaurants/${request.id}`)}
+                        className="text-blue-600 hover:text-blue-900"
+                        title="View Details"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      {request.status === 'pending' && (
-                        <>
-                          <button className="text-green-600 hover:text-green-900">
-                            <Check className="w-4 h-4" />
-                          </button>
-                          <button className="text-red-600 hover:text-red-900">
-                            <X className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
+                      <button 
+                        onClick={() => handleApprove(request.id)}
+                        className="text-green-600 hover:text-green-900"
+                        title="Approve Restaurant"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleReject(request.id)}
+                        className="text-red-600 hover:text-red-900"
+                        title="Reject Restaurant"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -174,15 +228,13 @@ export default function RestaurantsRequested() {
             </tbody>
           </table>
         </div>
+        
+        {filteredRequests.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-gray-500">No pending restaurant requests found</div>
+          </div>
+        )}
       </div>
-
-      {filteredRequests.length === 0 && (
-        <div className="text-center py-12">
-          <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No restaurant requests found</h3>
-          <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
-        </div>
-      )}
     </div>
   )
 }

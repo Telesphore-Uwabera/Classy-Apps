@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Search, Plus, Gift, Tag, MoreVertical, Trash2, Settings } from 'lucide-react'
+import { Search, Plus, Gift, Tag, MoreVertical, Trash2, Settings, RefreshCw } from 'lucide-react'
+import { firebaseService } from '../services/firebaseService'
 
 interface Coupon {
   id: string
@@ -10,303 +11,236 @@ interface Coupon {
   validUpto: string
   status: 'active' | 'inactive'
   type: 'available_on_phone' | 'shared' | 'shared_used'
+  description?: string
+  usageCount?: number
+  maxUsage?: number
 }
 
 export default function Coupons() {
-  const [coupons, setCoupons] = useState<Coupon[]>([
-    {
-      id: '1',
-      maxDiscountAmount: 20,
-      discountPercentage: 10,
-      minimumBookingAmount: 200,
-      couponCode: '1234',
-      validUpto: '27 Aug 2025',
-      status: 'inactive',
-      type: 'available_on_phone'
-    },
-    {
-      id: '2',
-      maxDiscountAmount: 100,
-      discountPercentage: 50,
-      minimumBookingAmount: 200,
-      couponCode: 'FLAT50',
-      validUpto: '30 Apr 2025',
-      status: 'inactive',
-      type: 'available_on_phone'
-    },
-    {
-      id: '3',
-      maxDiscountAmount: 45,
-      discountPercentage: 56,
-      minimumBookingAmount: 65,
-      couponCode: '24',
-      validUpto: '10 Jul 2025',
-      status: 'inactive',
-      type: 'shared'
-    },
-    {
-      id: '4',
-      maxDiscountAmount: 5,
-      discountPercentage: 5,
-      minimumBookingAmount: 5,
-      couponCode: 'ABCDEF',
-      validUpto: '03 Apr 2025',
-      status: 'inactive',
-      type: 'shared'
-    }
-  ])
-
-  const [activeTab, setActiveTab] = useState<'available_on_phone' | 'shared' | 'shared_used'>('available_on_phone')
+  const [coupons, setCoupons] = useState<Coupon[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
-  const [openSubmenu, setOpenSubmenu] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+
+  useEffect(() => {
+    loadCoupons()
+  }, [])
+
+  const loadCoupons = async () => {
+    try {
+      setLoading(true)
+      const couponsData = await firebaseService.getCollection('coupons')
+      
+      const couponsWithDetails = couponsData.map((coupon: any) => ({
+        id: coupon.id,
+        maxDiscountAmount: coupon.maxDiscountAmount || 0,
+        discountPercentage: coupon.discountPercentage || 0,
+        minimumBookingAmount: coupon.minimumBookingAmount || 0,
+        couponCode: coupon.couponCode || 'Unknown',
+        validUpto: coupon.validUpto?.toDate?.()?.toLocaleDateString() || 'Unknown',
+        status: coupon.status || 'inactive',
+        type: coupon.type || 'available_on_phone',
+        description: coupon.description || '',
+        usageCount: coupon.usageCount || 0,
+        maxUsage: coupon.maxUsage || 100
+      }))
+      
+      setCoupons(couponsWithDetails)
+    } catch (error) {
+      console.error('Error loading coupons:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const toggleCouponStatus = async (couponId: string, currentStatus: string) => {
+    try {
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
+      await firebaseService.updateDocument('coupons', couponId, { status: newStatus })
+      
+      setCoupons(prev => 
+        prev.map(coupon => 
+          coupon.id === couponId 
+            ? { ...coupon, status: newStatus as 'active' | 'inactive' }
+            : coupon
+        )
+      )
+    } catch (error) {
+      console.error('Error updating coupon status:', error)
+    }
+  }
+
+  const deleteCoupon = async (couponId: string) => {
+    if (window.confirm('Are you sure you want to delete this coupon?')) {
+      try {
+        await firebaseService.deleteDocument('coupons', couponId)
+        setCoupons(prev => prev.filter(coupon => coupon.id !== couponId))
+      } catch (error) {
+        console.error('Error deleting coupon:', error)
+      }
+    }
+  }
 
   const filteredCoupons = coupons.filter(coupon => {
-    const matchesTab = coupon.type === activeTab
-    const matchesSearch = coupon.couponCode.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchesTab && matchesSearch
+    const matchesSearch = coupon.couponCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         coupon.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = statusFilter === 'all' || coupon.status === statusFilter
+    return matchesSearch && matchesStatus
   })
 
-  const getTabLabel = (type: string) => {
+  const getStatusColor = (status: string) => {
+    return status === 'active' 
+      ? 'bg-green-100 text-green-800' 
+      : 'bg-red-100 text-red-800'
+  }
+
+  const getTypeColor = (type: string) => {
     switch (type) {
-      case 'available_on_phone':
-        return 'Available on phone'
-      case 'shared':
-        return 'Shared'
-      case 'shared_used':
-        return 'Shared coupons used'
-      default:
-        return type
+      case 'available_on_phone': return 'bg-blue-100 text-blue-800'
+      case 'shared': return 'bg-purple-100 text-purple-800'
+      case 'shared_used': return 'bg-gray-100 text-gray-800'
+      default: return 'bg-gray-100 text-gray-800'
     }
   }
 
-  const getNoteText = () => {
-    switch (activeTab) {
-      case 'available_on_phone':
-        return 'Note -: These coupons will be available for display within the customer app, and any user can redeem them. They are not limited to a single use.'
-      case 'shared':
-        return 'Note-: These coupons will not be displayed in the app and can be redeemed only once.'
-      case 'shared_used':
-        return 'Note-: These are shared coupons that have been used by customers.'
-      default:
-        return ''
-    }
-  }
-
-  const handleAddCoupon = () => {
-    // Implement add coupon functionality
-    console.log('Adding new coupon...')
-  }
-
-  const handleDeleteCoupon = (couponId: string) => {
-    setCoupons(prevCoupons => prevCoupons.filter(coupon => coupon.id !== couponId))
-    setOpenDropdown(null)
-  }
-
-  const handleStatusChange = (couponId: string, newStatus: 'active' | 'inactive') => {
-    setCoupons(prevCoupons => 
-      prevCoupons.map(coupon => 
-        coupon.id === couponId 
-          ? { ...coupon, status: newStatus }
-          : coupon
-      )
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+        </div>
+      </div>
     )
-    setOpenSubmenu(null)
-    setOpenDropdown(null)
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Coupons</h1>
-          <p className="text-gray-600 mt-1">Manage discount coupons and promotional codes</p>
+          <p className="text-gray-600 mt-1">Manage discount coupons from Firebase</p>
         </div>
+        <div className="flex space-x-2">
         <button
-          onClick={handleAddCoupon}
-          className="flex items-center px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+            onClick={loadCoupons}
+            className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
         >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </button>
+          <button className="flex items-center px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors">
           <Plus className="w-4 h-4 mr-2" />
-          Add
+            Add Coupon
         </button>
       </div>
-
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {[
-            { key: 'available_on_phone', label: 'Available on phone' },
-            { key: 'shared', label: 'Shared' },
-            { key: 'shared_used', label: 'Shared coupons used' }
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key as any)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab.key
-                  ? 'border-yellow-500 text-yellow-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
       </div>
 
-      {/* Search */}
-      <div className="flex items-center space-x-4">
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
             type="text"
-            placeholder="Search by coupon code"
+            placeholder="Search coupons..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
           />
+        </div>
+        <div className="flex space-x-2">
+          {[
+            { key: 'all', label: 'All' },
+            { key: 'active', label: 'Active' },
+            { key: 'inactive', label: 'Inactive' }
+          ].map((filter) => (
+            <button
+              key={filter.key}
+              onClick={() => setStatusFilter(filter.key as any)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                statusFilter === filter.key
+                  ? 'bg-pink-100 text-pink-800'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Coupons Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sr. no.
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Max discount amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Discount percentage
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Minimum booking amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Coupon code
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Valid upto
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredCoupons.length > 0 ? (
-                filteredCoupons.map((coupon, index) => (
-                  <tr key={coupon.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {index + 1}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ${coupon.maxDiscountAmount}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {coupon.discountPercentage}%
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ${coupon.minimumBookingAmount}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {coupon.couponCode}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {coupon.validUpto}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                        coupon.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {coupon.status === 'active' ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="relative">
+      {/* Coupons Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredCoupons.map((coupon) => (
+          <div key={coupon.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center">
+                <Gift className="w-5 h-5 text-pink-600 mr-2" />
+                <h3 className="text-lg font-semibold text-gray-900">{coupon.couponCode}</h3>
+              </div>
+              <div className="flex space-x-1">
                         <button
-                          onClick={() => setOpenDropdown(openDropdown === coupon.id ? null : coupon.id)}
-                          className="w-8 h-8 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center hover:bg-yellow-200 transition-colors"
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-                        {openDropdown === coupon.id && (
-                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                            <div className="py-1">
-                              <div className="relative">
-                                <button
-                                  onClick={() => setOpenSubmenu(openSubmenu === coupon.id ? null : coupon.id)}
-                                  className="flex items-center justify-between w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                >
-                                  <span>Change Status</span>
-                                  <span>&lt;</span>
-                                </button>
-                                {openSubmenu === coupon.id && (
-                                  <div className="absolute right-full top-0 mt-0 w-32 bg-white rounded-md shadow-lg border border-gray-200">
-                                    <div className="py-1">
-                                      <button
-                                        onClick={() => handleStatusChange(coupon.id, 'active')}
-                                        className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                      >
-                                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                                        Active
+                  onClick={() => toggleCouponStatus(coupon.id, coupon.status)}
+                  className="text-gray-400 hover:text-blue-600 transition-colors"
+                  title="Toggle Status"
+                >
+                  <Settings className="w-4 h-4" />
                                       </button>
                                       <button
-                                        onClick={() => handleStatusChange(coupon.id, 'inactive')}
-                                        className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  onClick={() => deleteCoupon(coupon.id)}
+                  className="text-gray-400 hover:text-red-600 transition-colors"
+                  title="Delete Coupon"
                                       >
-                                        <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                                        Inactive
+                  <Trash2 className="w-4 h-4" />
                                       </button>
                                     </div>
                                   </div>
-                                )}
+            
+            <div className="space-y-3 mb-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Discount:</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {coupon.discountPercentage}% (Max ${coupon.maxDiscountAmount})
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Min. Amount:</span>
+                <span className="text-sm font-medium text-gray-900">${coupon.minimumBookingAmount}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Valid Until:</span>
+                <span className="text-sm font-medium text-gray-900">{coupon.validUpto}</span>
                               </div>
-                              <button
-                                onClick={() => handleDeleteCoupon(coupon.id)}
-                                className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete coupon
-                              </button>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Usage:</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {coupon.usageCount}/{coupon.maxUsage}
+                </span>
                             </div>
                           </div>
-                        )}
+            
+            <div className="flex justify-between items-center">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(coupon.status)}`}>
+                {coupon.status}
+              </span>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor(coupon.type)}`}>
+                <Tag className="w-3 h-3 mr-1" />
+                {coupon.type.replace('_', ' ')}
+              </span>
                       </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center">
-                      <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                        <Gift className="w-8 h-8 text-gray-400" />
-                      </div>
-                      <p className="text-gray-500 text-lg">No data</p>
-                      <p className="text-gray-400 text-sm">No coupons found for the selected type</p>
+            
+            {coupon.description && (
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <p className="text-sm text-gray-600">{coupon.description}</p>
                     </div>
-                  </td>
-                </tr>
               )}
-            </tbody>
-          </table>
         </div>
+        ))}
       </div>
 
-      {/* Note */}
-      {getNoteText() && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">{getNoteText()}</p>
+      {filteredCoupons.length === 0 && (
+        <div className="text-center py-12">
+          <Gift className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+          <div className="text-gray-500">No coupons found</div>
         </div>
       )}
     </div>

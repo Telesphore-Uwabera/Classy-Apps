@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Save, Settings, DollarSign, MapPin, Mail, Phone, Percent } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Save, Settings, DollarSign, MapPin, Mail, Phone, Percent, RefreshCw } from 'lucide-react'
+import { firebaseService } from '../services/firebaseService'
 
 export default function AppConfiguration() {
   const [config, setConfig] = useState({
@@ -35,6 +36,29 @@ export default function AppConfiguration() {
   })
 
   const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    loadConfiguration()
+  }, [])
+
+  const loadConfiguration = async () => {
+    try {
+      setLoading(true)
+      const configData = await firebaseService.getDocument('app_config', 'main')
+      
+      if (configData) {
+        setConfig(prev => ({
+          ...prev,
+          ...configData
+        }))
+      }
+    } catch (error) {
+      console.error('Error loading configuration:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleInputChange = (field: string, value: string | number) => {
     setConfig((prev: any) => ({
@@ -45,324 +69,296 @@ export default function AppConfiguration() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault()
-    setLoading(true)
+    setSaving(true)
     
     try {
-      // Implement save configuration functionality
-      console.log('Saving configuration:', config)
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await firebaseService.setDocument('app_config', 'main', {
+        ...config,
+        updatedAt: new Date()
+      })
+      
       alert('Configuration saved successfully!')
     } catch (error) {
       console.error('Error saving configuration:', error)
       alert('Error saving configuration')
     } finally {
-      setLoading(false)
+      setSaving(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">App Configuration</h1>
-        <p className="text-gray-600 mt-1">Configure application settings and parameters</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">App Configuration</h1>
+          <p className="text-gray-600 mt-1">Manage app settings stored in Firebase</p>
+        </div>
+        <button 
+          onClick={loadConfiguration}
+          className="flex items-center px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh
+        </button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Driver Configuration */}
+        {/* Driver Settings */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <Settings className="w-5 h-5 text-gray-600 mr-2" />
-            <h3 className="text-lg font-semibold text-gray-800">Driver</h3>
+          <div className="flex items-center mb-6">
+            <Settings className="w-5 h-5 text-blue-600 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-800">Driver Settings</h2>
           </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Base fee <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Base Fee ($)</label>
               <input
                 type="number"
                 value={config.baseFee}
-                onChange={(e: any) => handleInputChange('baseFee', parseInt(e.target.value) || 0)}
+                onChange={(e) => handleInputChange('baseFee', parseFloat(e.target.value) || 0)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               />
             </div>
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Price per km <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Price per KM ($)</label>
               <input
                 type="number"
+                step="0.1"
                 value={config.pricePerKm}
-                onChange={(e: any) => handleInputChange('pricePerKm', parseInt(e.target.value) || 0)}
+                onChange={(e) => handleInputChange('pricePerKm', parseFloat(e.target.value) || 0)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               />
             </div>
           </div>
         </div>
 
-        {/* Support Configuration */}
+        {/* Support Settings */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <Phone className="w-5 h-5 text-gray-600 mr-2" />
-            <h3 className="text-lg font-semibold text-gray-800">Support</h3>
+          <div className="flex items-center mb-6">
+            <Phone className="w-5 h-5 text-green-600 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-800">Support Settings</h2>
           </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Support Email</label>
               <input
                 type="email"
                 value={config.supportEmail}
-                onChange={(e: any) => handleInputChange('supportEmail', e.target.value)}
+                onChange={(e) => handleInputChange('supportEmail', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               />
             </div>
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Call <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Support Phone</label>
               <input
                 type="tel"
                 value={config.supportPhone}
-                onChange={(e: any) => handleInputChange('supportPhone', e.target.value)}
+                onChange={(e) => handleInputChange('supportPhone', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               />
             </div>
           </div>
         </div>
 
-        {/* Tax Configuration */}
+        {/* Tax Settings */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <Percent className="w-5 h-5 text-gray-600 mr-2" />
-            <h3 className="text-lg font-semibold text-gray-800">Tax</h3>
+          <div className="flex items-center mb-6">
+            <Percent className="w-5 h-5 text-orange-600 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-800">Tax Settings</h2>
           </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tax keyword <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Tax Keyword</label>
               <input
                 type="text"
                 value={config.taxKeyword}
-                onChange={(e: any) => handleInputChange('taxKeyword', e.target.value)}
+                onChange={(e) => handleInputChange('taxKeyword', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               />
             </div>
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tax percentage(%) <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Tax Percentage (%)</label>
               <input
                 type="number"
                 value={config.taxPercentage}
-                onChange={(e: any) => handleInputChange('taxPercentage', parseInt(e.target.value) || 0)}
+                onChange={(e) => handleInputChange('taxPercentage', parseFloat(e.target.value) || 0)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               />
             </div>
           </div>
         </div>
 
-        {/* Commission Configuration */}
+        {/* Commission Settings */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <DollarSign className="w-5 h-5 text-gray-600 mr-2" />
-            <h3 className="text-lg font-semibold text-gray-800">Commission</h3>
+          <div className="flex items-center mb-6">
+            <DollarSign className="w-5 h-5 text-purple-600 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-800">Commission Settings</h2>
           </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Commission of Driver(%) <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Driver Commission (%)</label>
               <input
                 type="number"
                 value={config.driverCommission}
-                onChange={(e: any) => handleInputChange('driverCommission', parseInt(e.target.value) || 0)}
+                onChange={(e) => handleInputChange('driverCommission', parseFloat(e.target.value) || 0)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               />
             </div>
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Commission of Restaurant(%) <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Restaurant Commission (%)</label>
               <input
                 type="number"
                 value={config.restaurantCommission}
-                onChange={(e: any) => handleInputChange('restaurantCommission', parseInt(e.target.value) || 0)}
+                onChange={(e) => handleInputChange('restaurantCommission', parseFloat(e.target.value) || 0)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               />
             </div>
           </div>
         </div>
 
-        {/* Email Account Configuration */}
+        {/* App Settings */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <Mail className="w-5 h-5 text-gray-600 mr-2" />
-            <h3 className="text-lg font-semibold text-gray-800">Email account for sending email</h3>
+          <div className="flex items-center mb-6">
+            <MapPin className="w-5 h-5 text-indigo-600 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-800">App Settings</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email address
-              </label>
-              <input
-                type="email"
-                value={config.emailAddress}
-                onChange={(e: any) => handleInputChange('emailAddress', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                App password
-              </label>
-              <input
-                type="password"
-                value={config.appPassword}
-                onChange={(e: any) => handleInputChange('appPassword', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* App Configuration */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <Settings className="w-5 h-5 text-gray-600 mr-2" />
-            <h3 className="text-lg font-semibold text-gray-800">App</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Platform fees <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Platform Fees (%)</label>
               <input
                 type="number"
                 value={config.platformFees}
-                onChange={(e: any) => handleInputChange('platformFees', parseInt(e.target.value) || 0)}
+                onChange={(e) => handleInputChange('platformFees', parseFloat(e.target.value) || 0)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               />
             </div>
-          </div>
-        </div>
-
-        {/* Order Configuration */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <MapPin className="w-5 h-5 text-gray-600 mr-2" />
-            <h3 className="text-lg font-semibold text-gray-800">Order</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Order taking range per km <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Order Taking Range (km)</label>
               <input
                 type="number"
                 value={config.orderTakingRange}
-                onChange={(e: any) => handleInputChange('orderTakingRange', parseInt(e.target.value) || 0)}
+                onChange={(e) => handleInputChange('orderTakingRange', parseFloat(e.target.value) || 0)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               />
             </div>
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Show restaurant range(Driver) per km <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Show Restaurant Range (km)</label>
               <input
                 type="number"
                 value={config.showRestaurantRange}
-                onChange={(e: any) => handleInputChange('showRestaurantRange', parseInt(e.target.value) || 0)}
+                onChange={(e) => handleInputChange('showRestaurantRange', parseFloat(e.target.value) || 0)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               />
             </div>
           </div>
         </div>
 
-        {/* Social Links Configuration */}
+        {/* Email Settings */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <Settings className="w-5 h-5 text-gray-600 mr-2" />
-            <h3 className="text-lg font-semibold text-gray-800">Social links</h3>
+          <div className="flex items-center mb-6">
+            <Mail className="w-5 h-5 text-red-600 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-800">Email Settings</h2>
           </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+              <input
+                type="email"
+                value={config.emailAddress}
+                onChange={(e) => handleInputChange('emailAddress', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">App Password</label>
+              <input
+                type="password"
+                value={config.appPassword}
+                onChange={(e) => handleInputChange('appPassword', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Social Links */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">Social Media Links</h2>
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Facebook URL
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Facebook URL</label>
               <input
                 type="url"
                 value={config.facebookUrl}
-                onChange={(e: any) => handleInputChange('facebookUrl', e.target.value)}
+                onChange={(e) => handleInputChange('facebookUrl', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               />
             </div>
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Instagram URL
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Instagram URL</label>
               <input
                 type="url"
                 value={config.instagramUrl}
-                onChange={(e: any) => handleInputChange('instagramUrl', e.target.value)}
+                onChange={(e) => handleInputChange('instagramUrl', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               />
             </div>
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Youtube URL
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">YouTube URL</label>
               <input
                 type="url"
                 value={config.youtubeUrl}
-                onChange={(e: any) => handleInputChange('youtubeUrl', e.target.value)}
+                onChange={(e) => handleInputChange('youtubeUrl', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               />
             </div>
           </div>
         </div>
 
-        {/* Account Management Section */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center mb-4">
-            <Settings className="w-5 h-5 text-pink-500 mr-2" />
-            <h3 className="text-lg font-semibold text-gray-900">Account Management</h3>
-          </div>
-          
-          <div className="border-t border-gray-200 pt-6">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-red-800 mb-2">Danger Zone</h4>
-              <p className="text-sm text-red-600 mb-4">
-                Once you delete your account, there is no going back. Please be certain.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.confirm('Are you sure you want to delete your admin account? This action cannot be undone.')) {
-                    // Handle delete account logic here
-                    alert('Delete account functionality would be implemented here');
-                  }
-                }}
-                className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Delete Admin Account
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Submit Button */}
+        {/* Save Button */}
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={loading}
-            className="flex items-center px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled={saving}
+            className="flex items-center px-6 py-3 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Save className="w-4 h-4 mr-2" />
-            {loading ? 'Saving...' : 'Submit'}
+            {saving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Save Configuration
+              </>
+            )}
           </button>
         </div>
       </form>
