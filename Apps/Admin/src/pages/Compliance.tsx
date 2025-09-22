@@ -15,7 +15,7 @@ export default function Compliance() {
     try {
       setLoading(true)
       const [reportsData, statsData] = await Promise.all([
-        complianceService.getComplianceReports(),
+        complianceService.getComplianceReports({}),
         complianceService.getComplianceStatistics()
       ])
       setReports(reportsData)

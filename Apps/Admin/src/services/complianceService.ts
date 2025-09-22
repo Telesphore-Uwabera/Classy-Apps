@@ -641,27 +641,11 @@ class ComplianceService {
     return users.length * 1024 * 1024 // 1MB per user
   }
 
-  // Get compliance reports
-  async getComplianceReports(): Promise<any[]> {
-    try {
-      const q = query(collection(db, 'compliance_reports'), orderBy('createdAt', 'desc'), limit(50))
-      const snapshot = await getDocs(q)
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate()
-      }))
-    } catch (error) {
-      console.error('Error getting compliance reports:', error)
-      return []
-    }
-  }
 
   // Get compliance statistics
   async getComplianceStatistics(): Promise<any> {
     try {
-      const reports = await this.getComplianceReports()
+      const reports = await this.getComplianceReports({})
       const totalReports = reports.length
       const completedReports = reports.filter(r => r.status === 'completed').length
       const pendingReports = reports.filter(r => r.status === 'pending').length
