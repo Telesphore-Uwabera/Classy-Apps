@@ -640,6 +640,74 @@ class ComplianceService {
     // Mock calculation - in real implementation, this would calculate actual data volume
     return users.length * 1024 * 1024 // 1MB per user
   }
+
+  // Get compliance reports
+  async getComplianceReports(): Promise<any[]> {
+    try {
+      const q = query(collection(db, 'compliance_reports'), orderBy('createdAt', 'desc'), limit(50))
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate(),
+        updatedAt: doc.data().updatedAt?.toDate()
+      }))
+    } catch (error) {
+      console.error('Error getting compliance reports:', error)
+      return []
+    }
+  }
+
+  // Get compliance statistics
+  async getComplianceStatistics(): Promise<any> {
+    try {
+      const reports = await this.getComplianceReports()
+      const totalReports = reports.length
+      const completedReports = reports.filter(r => r.status === 'completed').length
+      const pendingReports = reports.filter(r => r.status === 'pending').length
+      const complianceRate = totalReports > 0 ? (completedReports / totalReports) * 100 : 0
+      
+      return {
+        totalReports,
+        completedReports,
+        pendingReports,
+        complianceRate: Math.round(complianceRate * 10) / 10,
+        pendingIssues: pendingReports,
+        improvementRate: 15.2 // This would be calculated from historical data
+      }
+    } catch (error) {
+      console.error('Error getting compliance statistics:', error)
+      return {
+        totalReports: 0,
+        completedReports: 0,
+        pendingReports: 0,
+        complianceRate: 0,
+        pendingIssues: 0,
+        improvementRate: 0
+      }
+    }
+  }
+
+  // Generate compliance report
+  async generateComplianceReport(type: string): Promise<any> {
+    try {
+      const now = new Date()
+      const report = {
+        type,
+        status: 'completed',
+        createdAt: now,
+        updatedAt: now,
+        generatedBy: 'admin',
+        period: type === 'monthly' ? 'Current Month' : 'Current Quarter'
+      }
+      
+      const docRef = await addDoc(collection(db, 'compliance_reports'), report)
+      return { id: docRef.id, ...report }
+    } catch (error) {
+      console.error('Error generating compliance report:', error)
+      throw error
+    }
+  }
 }
 
 export const complianceService = new ComplianceService()
