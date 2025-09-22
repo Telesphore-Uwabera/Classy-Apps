@@ -37,6 +37,8 @@ import AppConfiguration from './pages/AppConfiguration'
 import FareManagement from './pages/FareManagement'
 import LiveTracking from './pages/LiveTracking'
 import IncidentManagement from './pages/IncidentManagement'
+import Analytics from './pages/Analytics'
+import Helpdesk from './pages/Helpdesk'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -98,6 +100,8 @@ function AppRoutes() {
         <Route path="fare-management" element={<FareManagement />} />
         <Route path="live-tracking" element={<LiveTracking />} />
         <Route path="incident-management" element={<IncidentManagement />} />
+        <Route path="analytics" element={<Analytics />} />
+        <Route path="helpdesk" element={<Helpdesk />} />
       </Route>
     </Routes>
   )
