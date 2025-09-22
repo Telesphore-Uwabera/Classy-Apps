@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { authService } from '../services/authService'
 import { simpleLogin } from '../utils/simpleAuth'
 import { AdminUser } from '../types/auth'
 
@@ -19,12 +18,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const unsubscribe = authService.onAuthStateChange((adminUser) => {
-      setUser(adminUser)
-      setLoading(false)
-    })
-
-    return unsubscribe
+    // Set loading to false immediately since we're using simple auth
+    setLoading(false)
   }, [])
 
   const login = async (email: string, password: string) => {
@@ -40,14 +35,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await authService.signOut()
+      // Simple logout - just clear the user state
+      setUser(null)
     } catch (error) {
       console.error('Logout error:', error)
     }
   }
 
   const hasPermission = (resource: string, action: string): boolean => {
-    return authService.hasPermission(resource, action)
+    // Simple permission check - allow all for now since we're using simple auth
+    return true
   }
 
   const value = {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { AlertTriangle, Plus, Search, Filter, Eye, Edit, Trash2, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { AlertTriangle, Plus, Search, Filter, Eye, Edit, Trash2, CheckCircle, XCircle, Clock, TrendingUp } from 'lucide-react'
 import { incidentService } from '../services/incidentService'
 import { Incident, IncidentStatistics } from '../services/incidentService'
 
