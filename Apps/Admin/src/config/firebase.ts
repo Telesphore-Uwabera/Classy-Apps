@@ -5,12 +5,12 @@ import { getStorage } from 'firebase/storage';
 
 // Firebase configuration - same as Flutter apps
 const firebaseConfig = {
-  apiKey: "AIzaSyASmUafz431YLkL6d1tNL9qv5cuHC1TkDw",
-  authDomain: "classyapp-unified-backend.firebaseapp.com",
-  projectId: "classyapp-unified-backend",
-  storageBucket: "classyapp-unified-backend.firebasestorage.app",
-  messagingSenderId: "156854442550",
-  appId: "1:156854442550:web:classyapp-unified-backend"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyASmUafz431YLkL6d1tNL9qv5cuHC1TkDw",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "classyapp-unified-backend.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "classyapp-unified-backend",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "classyapp-unified-backend.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "156854442550",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:156854442550:web:classyapp-unified-backend"
 };
 
 // Initialize Firebase
