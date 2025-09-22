@@ -478,6 +478,75 @@ class AnalyticsService {
     // For now, returning mock area
     return `Area_${Math.round(coordinates.lat * 100)}_${Math.round(coordinates.lng * 100)}`
   }
+
+  // Get comprehensive analytics data
+  async getAnalytics(): Promise<any> {
+    try {
+      // Return mock analytics data for now
+      return {
+        totalUsers: 2847,
+        totalRevenue: 12500000, // UGX
+        activeTrips: 23,
+        coverageArea: 150, // km²
+        averageResponseTime: 1.2, // seconds
+        successRate: 98.5, // percentage
+        customerSatisfaction: 4.6, // out of 5
+        revenueGrowth: 15.2, // percentage
+        userGrowth: 8.7, // percentage
+        tripCompletionRate: 96.8, // percentage
+        averageFare: 8500, // UGX
+        peakHours: ['7:00-9:00', '17:00-19:00'],
+        topAreas: [
+          { name: 'Kampala Central', trips: 456 },
+          { name: 'Nakawa', trips: 234 },
+          { name: 'Makindye', trips: 189 },
+          { name: 'Rubaga', trips: 167 },
+          { name: 'Kawempe', trips: 145 }
+        ],
+        driverPerformance: {
+          averageRating: 4.5,
+          totalDrivers: 156,
+          activeDrivers: 89,
+          newDrivers: 12
+        },
+        customerMetrics: {
+          totalCustomers: 2847,
+          newCustomers: 234,
+          returningCustomers: 2613,
+          averageOrderValue: 12500
+        }
+      }
+    } catch (error) {
+      console.error('Error getting analytics:', error)
+      return {
+        totalUsers: 0,
+        totalRevenue: 0,
+        activeTrips: 0,
+        coverageArea: 0,
+        averageResponseTime: 0,
+        successRate: 0,
+        customerSatisfaction: 0,
+        revenueGrowth: 0,
+        userGrowth: 0,
+        tripCompletionRate: 0,
+        averageFare: 0,
+        peakHours: [],
+        topAreas: [],
+        driverPerformance: {
+          averageRating: 0,
+          totalDrivers: 0,
+          activeDrivers: 0,
+          newDrivers: 0
+        },
+        customerMetrics: {
+          totalCustomers: 0,
+          newCustomers: 0,
+          returningCustomers: 0,
+          averageOrderValue: 0
+        }
+      }
+    }
+  }
 }
 
 export const analyticsService = new AnalyticsService()

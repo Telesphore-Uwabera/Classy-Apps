@@ -549,6 +549,59 @@ class HelpdeskService {
       return acc
     }, {})
   }
+
+  // Get helpdesk statistics
+  async getStatistics(): Promise<any> {
+    try {
+      // Return mock statistics for now
+      return {
+        totalTickets: 156,
+        openTickets: 23,
+        inProgressTickets: 45,
+        resolvedTickets: 78,
+        closedTickets: 10,
+        averageResponseTime: 2.5, // hours
+        averageResolutionTime: 24, // hours
+        customerSatisfaction: 4.2, // out of 5
+        ticketsByCategory: {
+          technical: 45,
+          billing: 32,
+          general: 28,
+          complaint: 25,
+          feature_request: 18,
+          bug_report: 8
+        },
+        ticketsByPriority: {
+          low: 45,
+          medium: 67,
+          high: 32,
+          urgent: 12
+        },
+        ticketsByStatus: {
+          open: 23,
+          in_progress: 45,
+          pending_customer: 15,
+          resolved: 78,
+          closed: 10
+        }
+      }
+    } catch (error) {
+      console.error('Error getting helpdesk statistics:', error)
+      return {
+        totalTickets: 0,
+        openTickets: 0,
+        inProgressTickets: 0,
+        resolvedTickets: 0,
+        closedTickets: 0,
+        averageResponseTime: 0,
+        averageResolutionTime: 0,
+        customerSatisfaction: 0,
+        ticketsByCategory: {},
+        ticketsByPriority: {},
+        ticketsByStatus: {}
+      }
+    }
+  }
 }
 
 export const helpdeskService = new HelpdeskService()
