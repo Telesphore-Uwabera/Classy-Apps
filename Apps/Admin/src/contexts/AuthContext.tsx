@@ -1,52 +1,37 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'
-import { auth } from '../config/firebase'
-
-interface User {
-  id: string
-  name: string
-  email: string
-  role: string
-}
+import { authService } from '../services/authService'
+import { simpleLogin } from '../utils/simpleAuth'
+import { AdminUser } from '../types/auth'
 
 interface AuthContextType {
-  user: User | null
+  user: AdminUser | null
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
   logout: () => void
   loading: boolean
+  hasPermission: (resource: string, action: string) => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<AdminUser | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Listen for Firebase auth state changes
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        const userData = {
-          id: firebaseUser.uid,
-          name: firebaseUser.displayName || 'Admin User',
-          email: firebaseUser.email || '',
-          role: 'admin'
-        }
-        setUser(userData)
-      } else {
-        setUser(null)
-      }
+    const unsubscribe = authService.onAuthStateChange((adminUser) => {
+      setUser(adminUser)
       setLoading(false)
     })
 
-    return () => unsubscribe()
+    return unsubscribe
   }, [])
 
   const login = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password)
-      // User state will be updated by onAuthStateChanged
+      // Try the simple login first (bypasses Firestore)
+      const adminUser = await simpleLogin(email, password)
+      setUser(adminUser)
     } catch (error) {
       console.error('Login error:', error)
       throw new Error('Invalid credentials')
@@ -55,11 +40,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await signOut(auth)
-      // User state will be updated by onAuthStateChanged
+      await authService.signOut()
     } catch (error) {
       console.error('Logout error:', error)
     }
+  }
+
+  const hasPermission = (resource: string, action: string): boolean => {
+    return authService.hasPermission(resource, action)
   }
 
   const value = {
@@ -67,7 +55,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: !!user,
     login,
     logout,
-    loading
+    loading,
+    hasPermission
   }
 
   return (

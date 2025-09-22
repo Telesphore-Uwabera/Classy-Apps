@@ -2,13 +2,15 @@ import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Settings } from 'lucide-react'
+// Removed setup import since we're using simple auth
 
 export default function Login() {
   const [email, setEmail] = useState('admin@classy.com')
   const [password, setPassword] = useState('admin123')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  // Removed setup loading state
   
   const { login } = useAuth()
   const navigate = useNavigate()
@@ -27,6 +29,8 @@ export default function Login() {
       setLoading(false)
     }
   }
+
+  // Removed setup function since we're using simple auth
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-rose-50 py-12 px-4 sm:px-6 lg:px-8">

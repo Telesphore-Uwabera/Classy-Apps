@@ -34,6 +34,9 @@ import FAQs from './pages/FAQs'
 import FAQEditor from './pages/FAQEditor'
 import CloudMessaging from './pages/CloudMessaging'
 import AppConfiguration from './pages/AppConfiguration'
+import FareManagement from './pages/FareManagement'
+import LiveTracking from './pages/LiveTracking'
+import IncidentManagement from './pages/IncidentManagement'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -92,6 +95,9 @@ function AppRoutes() {
         <Route path="faqs/new" element={<FAQEditor />} />
         <Route path="cloud-messaging" element={<CloudMessaging />} />
         <Route path="app-configuration" element={<AppConfiguration />} />
+        <Route path="fare-management" element={<FareManagement />} />
+        <Route path="live-tracking" element={<LiveTracking />} />
+        <Route path="incident-management" element={<IncidentManagement />} />
       </Route>
     </Routes>
   )

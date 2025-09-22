@@ -18,7 +18,14 @@ import {
   X,
   ChevronDown,
   Star,
-  FileCheck
+  FileCheck,
+  Calculator,
+  MapPin,
+  AlertTriangle,
+  BarChart3,
+  Headphones,
+  FileBarChart,
+  Plane
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -61,6 +68,19 @@ const managementItems: MenuItem[] = [
   { name: 'FAQs', href: '/faqs', icon: HelpCircle },
   { name: 'Cloud Messaging', href: '/cloud-messaging', icon: Cloud },
   { name: 'App Configuration', href: '/app-configuration', icon: Settings },
+]
+
+const operationsItems: MenuItem[] = [
+  { name: 'Fare Management', href: '/fare-management', icon: Calculator },
+  { name: 'Live Tracking', href: '/live-tracking', icon: MapPin },
+  { name: 'Incident Management', href: '/incident-management', icon: AlertTriangle },
+]
+
+const analyticsItems: MenuItem[] = [
+  { name: 'Analytics Dashboard', href: '/analytics', icon: BarChart3 },
+  { name: 'Helpdesk', href: '/helpdesk', icon: Headphones },
+  { name: 'Compliance Reports', href: '/compliance', icon: FileBarChart },
+  { name: 'Airline Management', href: '/airlines', icon: Plane },
 ]
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
@@ -145,10 +165,28 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             
             <div className="pt-4">
               <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Operations
+              </h3>
+              <ul className="space-y-1">
+                {operationsItems.map(renderMenuItem)}
+              </ul>
+            </div>
+            
+            <div className="pt-4">
+              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                 Management
               </h3>
               <ul className="space-y-1">
                 {managementItems.map(renderMenuItem)}
+              </ul>
+            </div>
+            
+            <div className="pt-4">
+              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Analytics & Reports
+              </h3>
+              <ul className="space-y-1">
+                {analyticsItems.map(renderMenuItem)}
               </ul>
             </div>
           </nav>
