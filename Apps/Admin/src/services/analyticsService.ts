@@ -482,38 +482,88 @@ class AnalyticsService {
   // Get comprehensive analytics data
   async getAnalytics(): Promise<any> {
     try {
-      // Return mock analytics data for now
+      // Get data from multiple collections
+      const [users, orders, drivers, trips] = await Promise.all([
+        this.getUsers(),
+        this.getOrders(),
+        this.getDrivers(),
+        this.getTrips()
+      ])
+
+      const totalUsers = users.length
+      const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0)
+      const activeTrips = trips.filter(trip => ['pending', 'assigned', 'picked_up', 'in_progress'].includes(trip.status)).length
+      
+      // Calculate coverage area based on trip locations
+      const uniqueAreas = new Set()
+      trips.forEach(trip => {
+        if (trip.pickupLocation?.address) {
+          const area = this.getAreaFromCoordinates(trip.pickupLocation.coordinates)
+          uniqueAreas.add(area)
+        }
+      })
+      const coverageArea = uniqueAreas.size * 5 // Approximate 5km² per area
+
+      // Calculate success rate
+      const completedTrips = trips.filter(trip => trip.status === 'completed').length
+      const successRate = trips.length > 0 ? (completedTrips / trips.length) * 100 : 0
+
+      // Calculate average fare
+      const completedOrders = orders.filter(order => order.status === 'completed')
+      const averageFare = completedOrders.length > 0 
+        ? completedOrders.reduce((sum, order) => sum + (order.total || 0), 0) / completedOrders.length 
+        : 0
+
+      // Calculate trip completion rate
+      const tripCompletionRate = trips.length > 0 ? (completedTrips / trips.length) * 100 : 0
+
+      // Get driver performance
+      const activeDrivers = drivers.filter(driver => driver.status === 'active').length
+      const newDrivers = drivers.filter(driver => {
+        const createdAt = driver.createdAt instanceof Date ? driver.createdAt : new Date(driver.createdAt)
+        const thirtyDaysAgo = new Date()
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+        return createdAt > thirtyDaysAgo
+      }).length
+
+      // Get customer metrics
+      const newCustomers = users.filter(user => {
+        const createdAt = user.createdAt instanceof Date ? user.createdAt : new Date(user.createdAt)
+        const thirtyDaysAgo = new Date()
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+        return createdAt > thirtyDaysAgo
+      }).length
+
+      const returningCustomers = totalUsers - newCustomers
+      const averageOrderValue = completedOrders.length > 0 
+        ? completedOrders.reduce((sum, order) => sum + (order.total || 0), 0) / completedOrders.length 
+        : 0
+
       return {
-        totalUsers: 2847,
-        totalRevenue: 12500000, // UGX
-        activeTrips: 23,
-        coverageArea: 150, // km²
-        averageResponseTime: 1.2, // seconds
-        successRate: 98.5, // percentage
-        customerSatisfaction: 4.6, // out of 5
-        revenueGrowth: 15.2, // percentage
-        userGrowth: 8.7, // percentage
-        tripCompletionRate: 96.8, // percentage
-        averageFare: 8500, // UGX
-        peakHours: ['7:00-9:00', '17:00-19:00'],
-        topAreas: [
-          { name: 'Kampala Central', trips: 456 },
-          { name: 'Nakawa', trips: 234 },
-          { name: 'Makindye', trips: 189 },
-          { name: 'Rubaga', trips: 167 },
-          { name: 'Kawempe', trips: 145 }
-        ],
+        totalUsers,
+        totalRevenue,
+        activeTrips,
+        coverageArea,
+        averageResponseTime: 1.2, // This would be calculated from system metrics
+        successRate: Math.round(successRate * 10) / 10,
+        customerSatisfaction: 4.6, // This would come from ratings collection
+        revenueGrowth: 15.2, // This would be calculated from historical data
+        userGrowth: 8.7, // This would be calculated from historical data
+        tripCompletionRate: Math.round(tripCompletionRate * 10) / 10,
+        averageFare: Math.round(averageFare),
+        peakHours: ['7:00-9:00', '17:00-19:00'], // This would be calculated from trip data
+        topAreas: this.getTopAreas(trips),
         driverPerformance: {
-          averageRating: 4.5,
-          totalDrivers: 156,
-          activeDrivers: 89,
-          newDrivers: 12
+          averageRating: 4.5, // This would come from ratings collection
+          totalDrivers: drivers.length,
+          activeDrivers,
+          newDrivers
         },
         customerMetrics: {
-          totalCustomers: 2847,
-          newCustomers: 234,
-          returningCustomers: 2613,
-          averageOrderValue: 12500
+          totalCustomers: totalUsers,
+          newCustomers,
+          returningCustomers,
+          averageOrderValue: Math.round(averageOrderValue)
         }
       }
     } catch (error) {
@@ -546,6 +596,66 @@ class AnalyticsService {
         }
       }
     }
+  }
+
+  private async getUsers(): Promise<any[]> {
+    try {
+      const q = query(collection(db, 'users'), limit(1000))
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    } catch (error) {
+      console.error('Error getting users:', error)
+      return []
+    }
+  }
+
+  private async getOrders(): Promise<any[]> {
+    try {
+      const q = query(collection(db, 'orders'), limit(1000))
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    } catch (error) {
+      console.error('Error getting orders:', error)
+      return []
+    }
+  }
+
+  private async getDrivers(): Promise<any[]> {
+    try {
+      const q = query(collection(db, 'drivers'), limit(1000))
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    } catch (error) {
+      console.error('Error getting drivers:', error)
+      return []
+    }
+  }
+
+  private async getTrips(): Promise<any[]> {
+    try {
+      const q = query(collection(db, 'trips'), limit(1000))
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    } catch (error) {
+      console.error('Error getting trips:', error)
+      return []
+    }
+  }
+
+  private getTopAreas(trips: any[]): any[] {
+    const areaCounts: Record<string, number> = {}
+    
+    trips.forEach(trip => {
+      if (trip.pickupLocation?.address) {
+        const area = this.getAreaFromCoordinates(trip.pickupLocation.coordinates)
+        areaCounts[area] = (areaCounts[area] || 0) + 1
+      }
+    })
+
+    return Object.entries(areaCounts)
+      .map(([name, trips]) => ({ name, trips }))
+      .sort((a, b) => b.trips - a.trips)
+      .slice(0, 5)
   }
 }
 

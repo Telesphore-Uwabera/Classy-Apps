@@ -553,37 +553,48 @@ class HelpdeskService {
   // Get helpdesk statistics
   async getStatistics(): Promise<any> {
     try {
-      // Return mock statistics for now
+      const allTickets = await this.getTickets()
+      
+      const totalTickets = allTickets.length
+      const openTickets = allTickets.filter(t => t.status === 'open').length
+      const inProgressTickets = allTickets.filter(t => t.status === 'in_progress').length
+      const resolvedTickets = allTickets.filter(t => t.status === 'resolved').length
+      const closedTickets = allTickets.filter(t => t.status === 'closed').length
+      
+      const ticketsByCategory = this.groupByField(allTickets, 'category')
+      const ticketsByPriority = this.groupByField(allTickets, 'priority')
+      const ticketsByStatus = this.groupByField(allTickets, 'status')
+      
+      // Calculate average response time
+      const ticketsWithResponseTime = allTickets.filter(t => t.assignedAt && t.createdAt)
+      const averageResponseTime = ticketsWithResponseTime.length > 0
+        ? ticketsWithResponseTime.reduce((sum, ticket) => {
+            const responseTime = ticket.assignedAt!.getTime() - ticket.createdAt.getTime()
+            return sum + (responseTime / (1000 * 60 * 60)) // Convert to hours
+          }, 0) / ticketsWithResponseTime.length
+        : 0
+      
+      // Calculate average resolution time
+      const resolvedTicketsWithTime = allTickets.filter(t => t.status === 'resolved' && t.resolvedAt && t.createdAt)
+      const averageResolutionTime = resolvedTicketsWithTime.length > 0
+        ? resolvedTicketsWithTime.reduce((sum, ticket) => {
+            const resolutionTime = ticket.resolvedAt!.getTime() - ticket.createdAt.getTime()
+            return sum + (resolutionTime / (1000 * 60 * 60)) // Convert to hours
+          }, 0) / resolvedTicketsWithTime.length
+        : 0
+      
       return {
-        totalTickets: 156,
-        openTickets: 23,
-        inProgressTickets: 45,
-        resolvedTickets: 78,
-        closedTickets: 10,
-        averageResponseTime: 2.5, // hours
-        averageResolutionTime: 24, // hours
-        customerSatisfaction: 4.2, // out of 5
-        ticketsByCategory: {
-          technical: 45,
-          billing: 32,
-          general: 28,
-          complaint: 25,
-          feature_request: 18,
-          bug_report: 8
-        },
-        ticketsByPriority: {
-          low: 45,
-          medium: 67,
-          high: 32,
-          urgent: 12
-        },
-        ticketsByStatus: {
-          open: 23,
-          in_progress: 45,
-          pending_customer: 15,
-          resolved: 78,
-          closed: 10
-        }
+        totalTickets,
+        openTickets,
+        inProgressTickets,
+        resolvedTickets,
+        closedTickets,
+        averageResponseTime: Math.round(averageResponseTime * 10) / 10,
+        averageResolutionTime: Math.round(averageResolutionTime * 10) / 10,
+        customerSatisfaction: 4.2, // This would come from ratings collection
+        ticketsByCategory,
+        ticketsByPriority,
+        ticketsByStatus
       }
     } catch (error) {
       console.error('Error getting helpdesk statistics:', error)
