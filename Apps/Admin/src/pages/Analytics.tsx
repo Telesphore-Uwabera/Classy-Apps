@@ -5,6 +5,7 @@ import { analyticsService } from '../services/analyticsService'
 export default function Analytics() {
   const [analytics, setAnalytics] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     loadAnalytics()
@@ -13,10 +14,12 @@ export default function Analytics() {
   const loadAnalytics = async () => {
     try {
       setLoading(true)
+      setError(null)
       const data = await analyticsService.getAnalytics()
       setAnalytics(data)
     } catch (error) {
       console.error('Error loading analytics:', error)
+      setError('Failed to load analytics data. Please check your Firebase permissions.')
     } finally {
       setLoading(false)
     }
@@ -34,6 +37,28 @@ export default function Analytics() {
                 <div className="h-8 bg-gray-200 rounded w-3/4"></div>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <AlertTriangle className="h-6 w-6 text-red-600 mr-3" />
+            <div>
+              <h3 className="text-lg font-medium text-red-800">Error Loading Analytics</h3>
+              <p className="text-red-700 mt-1">{error}</p>
+              <button
+                onClick={loadAnalytics}
+                className="mt-3 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
           </div>
         </div>
       </div>

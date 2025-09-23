@@ -568,33 +568,7 @@ class AnalyticsService {
       }
     } catch (error) {
       console.error('Error getting analytics:', error)
-      return {
-        totalUsers: 0,
-        totalRevenue: 0,
-        activeTrips: 0,
-        coverageArea: 0,
-        averageResponseTime: 0,
-        successRate: 0,
-        customerSatisfaction: 0,
-        revenueGrowth: 0,
-        userGrowth: 0,
-        tripCompletionRate: 0,
-        averageFare: 0,
-        peakHours: [],
-        topAreas: [],
-        driverPerformance: {
-          averageRating: 0,
-          totalDrivers: 0,
-          activeDrivers: 0,
-          newDrivers: 0
-        },
-        customerMetrics: {
-          totalCustomers: 0,
-          newCustomers: 0,
-          returningCustomers: 0,
-          averageOrderValue: 0
-        }
-      }
+      throw error
     }
   }
 

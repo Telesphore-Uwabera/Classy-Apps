@@ -598,19 +598,7 @@ class HelpdeskService {
       }
     } catch (error) {
       console.error('Error getting helpdesk statistics:', error)
-      return {
-        totalTickets: 0,
-        openTickets: 0,
-        inProgressTickets: 0,
-        resolvedTickets: 0,
-        closedTickets: 0,
-        averageResponseTime: 0,
-        averageResolutionTime: 0,
-        customerSatisfaction: 0,
-        ticketsByCategory: {},
-        ticketsByPriority: {},
-        ticketsByStatus: {}
-      }
+      throw error
     }
   }
 }

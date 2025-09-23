@@ -7,11 +7,38 @@ import 'package:Classy/services/local_storage.service.dart';
 import 'package:velocity_x/velocity_x.dart';
 
 class AppColor {
-  static Color get accentColor => Vx.hexToColor(colorEnv('accentColor'));
-  static Color get primaryColor => Vx.hexToColor(colorEnv('primaryColor'));
-  static Color get primaryColorDark =>
-      Vx.hexToColor(colorEnv('primaryColorDark'));
-  static Color get cursorColor => accentColor;
+  // Classy Brand Colors - Consistent across all apps
+  static const Color classyPrimary = Color(0xFFE91E63); // Vibrant pink
+  static const Color classySecondary = Color(0xFF9C27B0); // Purple
+  static const Color classyAccent = Color(0xFFFF5722); // Orange
+  static const Color classySuccess = Color(0xFF4CAF50); // Green
+  static const Color classyWarning = Color(0xFFFF9800); // Orange
+  static const Color classyError = Color(0xFFF44336); // Red
+  static const Color classyInfo = Color(0xFF2196F3); // Blue
+  
+  // Background Colors
+  static const Color backgroundPrimary = Color(0xFFFFFFFF); // White
+  static const Color backgroundSecondary = Color(0xFFF5F5F5); // Light grey
+  static const Color backgroundCard = Color(0xFFFFFFFF); // White
+  
+  // Text Colors
+  static const Color textPrimary = Color(0xFF212121); // Dark grey/black
+  static const Color textSecondary = Color(0xFF757575); // Medium grey
+  static const Color textLight = Color(0xFFBDBDBD); // Light grey
+  static const Color textWhite = Color(0xFFFFFFFF); // White
+  
+  // Status Colors
+  static const Color statusOnline = Color(0xFF4CAF50); // Green
+  static const Color statusOffline = Color(0xFF9E9E9E); // Grey
+  static const Color statusPending = Color(0xFFFF9800); // Orange
+  static const Color statusVerified = Color(0xFF4CAF50); // Green
+  static const Color statusRejected = Color(0xFFF44336); // Red
+  
+  // Legacy color support (keeping for compatibility)
+  static Color get accentColor => classyPrimary;
+  static Color get primaryColor => classyPrimary;
+  static Color get primaryColorDark => classySecondary;
+  static Color get cursorColor => classyPrimary;
 
   //material color
   static MaterialColor get accentMaterialColor => MaterialColor(

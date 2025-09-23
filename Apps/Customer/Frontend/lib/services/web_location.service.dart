@@ -1,4 +1,3 @@
-import 'dart:html' as html;
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
@@ -7,9 +6,7 @@ class WebLocationService {
   static Future<Position?> getCurrentPosition({
     Duration timeout = const Duration(seconds: 15),
   }) async {
-    if (!kIsWeb) {
-      throw Exception('This service is only for web platform');
-    }
+    // This service now works on all platforms, not just web
 
     try {
       // Check if geolocation is supported

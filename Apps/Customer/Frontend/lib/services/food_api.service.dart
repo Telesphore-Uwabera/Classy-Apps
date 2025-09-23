@@ -8,7 +8,7 @@ class FoodApiService {
   factory FoodApiService() => _instance;
   FoodApiService._internal();
 
-  // Base URL pointing to customer-backend
+  // Base URL pointing to Node.js API
   static const String _baseUrl = 'http://localhost:8000/api';
 
   // Get list of food vendors

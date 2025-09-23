@@ -158,28 +158,25 @@ class NotificationListItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
       ),
       child: Icon(
-        IconData(
-          int.parse('0xe${_getIconCode()}'),
-          fontFamily: 'MaterialIcons',
-        ),
+        _getIcon(),
         color: _getBorderColor(null),
         size: 24,
       ),
     );
   }
 
-  String _getIconCode() {
+  IconData _getIcon() {
     switch (notification.icon) {
       case 'shopping_cart':
-        return '156';
+        return Icons.shopping_cart;
       case 'local_taxi':
-        return 'e531';
+        return Icons.local_taxi;
       case 'local_offer':
-        return 'e54e';
+        return Icons.local_offer;
       case 'notifications':
-        return '7f4e';
+        return Icons.notifications;
       default:
-        return '7f4e';
+        return Icons.notifications;
     }
   }
 

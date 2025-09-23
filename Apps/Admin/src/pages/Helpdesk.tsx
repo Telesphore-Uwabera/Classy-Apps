@@ -6,6 +6,7 @@ export default function Helpdesk() {
   const [tickets, setTickets] = useState<any[]>([])
   const [statistics, setStatistics] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [selectedTicket, setSelectedTicket] = useState<any>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [filters, setFilters] = useState({
@@ -23,10 +24,12 @@ export default function Helpdesk() {
   const loadTickets = async () => {
     try {
       setLoading(true)
+      setError(null)
       const data = await helpdeskService.getTickets(filters)
       setTickets(data)
     } catch (error) {
       console.error('Error loading tickets:', error)
+      setError('Failed to load tickets. Please check your Firebase permissions.')
     } finally {
       setLoading(false)
     }
@@ -34,10 +37,12 @@ export default function Helpdesk() {
 
   const loadStatistics = async () => {
     try {
+      setError(null)
       const data = await helpdeskService.getStatistics()
       setStatistics(data)
     } catch (error) {
       console.error('Error loading statistics:', error)
+      setError('Failed to load statistics. Please check your Firebase permissions.')
     }
   }
 
@@ -76,6 +81,28 @@ export default function Helpdesk() {
                 <div className="h-8 bg-gray-200 rounded w-3/4"></div>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <XCircle className="h-6 w-6 text-red-600 mr-3" />
+            <div>
+              <h3 className="text-lg font-medium text-red-800">Error Loading Helpdesk Data</h3>
+              <p className="text-red-700 mt-1">{error}</p>
+              <button
+                onClick={() => { loadTickets(); loadStatistics(); }}
+                className="mt-3 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
           </div>
         </div>
       </div>

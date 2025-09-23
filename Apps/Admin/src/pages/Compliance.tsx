@@ -4,6 +4,7 @@ import { complianceService } from '../services/complianceService'
 
 export default function Compliance() {
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [reports, setReports] = useState<any[]>([])
   const [statistics, setStatistics] = useState<any>(null)
 
@@ -14,6 +15,7 @@ export default function Compliance() {
   const loadData = async () => {
     try {
       setLoading(true)
+      setError(null)
       const [reportsData, statsData] = await Promise.all([
         complianceService.getComplianceReports({}),
         complianceService.getComplianceStatistics()
@@ -22,6 +24,7 @@ export default function Compliance() {
       setStatistics(statsData)
     } catch (error) {
       console.error('Error loading compliance data:', error)
+      setError('Failed to load compliance data. Please check your Firebase permissions.')
     } finally {
       setLoading(false)
     }
@@ -29,10 +32,12 @@ export default function Compliance() {
 
   const generateReport = async (type: string) => {
     try {
+      setError(null)
       const report = await complianceService.generateComplianceReport(type)
       setReports(prev => [report, ...prev])
     } catch (error) {
       console.error('Error generating report:', error)
+      setError('Failed to generate report. Please check your Firebase permissions.')
     }
   }
 
@@ -40,6 +45,32 @@ export default function Compliance() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900">Compliance Reports</h1>
+        </div>
+        
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <AlertTriangle className="h-6 w-6 text-red-600 mr-3" />
+            <div>
+              <h3 className="text-lg font-medium text-red-800">Error Loading Data</h3>
+              <p className="text-red-700 mt-1">{error}</p>
+              <button
+                onClick={loadData}
+                className="mt-3 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -150,7 +181,10 @@ export default function Compliance() {
                     {report.type}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {report.period}
+                    {typeof report.period === 'string' ? report.period : 
+                     report.period?.startDate && report.period?.endDate ? 
+                     `${new Date(report.period.startDate).toLocaleDateString()} - ${new Date(report.period.endDate).toLocaleDateString()}` : 
+                     'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${

@@ -120,6 +120,8 @@ export class FirebaseService {
         ...doc.data()
       }));
       callback(data);
+    }, (error) => {
+      console.error('Real-time subscription error:', error);
     });
   }
 
@@ -295,6 +297,59 @@ export class FirebaseService {
   // Get notifications
   async getNotifications() {
     return this.getCollection(COLLECTIONS.NOTIFICATIONS, 'createdAt');
+  }
+
+  // Real-time dashboard updates
+  subscribeToDashboardUpdates(callback: (stats: any) => void) {
+    const unsubscribeFunctions: (() => void)[] = [];
+    
+    // Subscribe to users
+    const unsubscribeUsers = this.subscribeToCollection(COLLECTIONS.USERS, (users) => {
+      const customers = users.filter(user => user.role === 'customer' || !user.role);
+      callback({ customers: customers.length });
+    });
+    unsubscribeFunctions.push(unsubscribeUsers);
+    
+    // Subscribe to vendors
+    const unsubscribeVendors = this.subscribeToCollection(COLLECTIONS.VENDORS, (vendors) => {
+      const activeVendors = vendors.filter(vendor => 
+        vendor.status === 'active' || vendor.status === 'approved' || vendor.status === 'online'
+      );
+      const pendingVendors = vendors.filter(vendor => 
+        vendor.status === 'pending' || vendor.status === 'offline' || !vendor.status
+      );
+      callback({ 
+        vendors: activeVendors.length,
+        pendingVendors: pendingVendors.length
+      });
+    });
+    unsubscribeFunctions.push(unsubscribeVendors);
+    
+    // Subscribe to drivers
+    const unsubscribeDrivers = this.subscribeToCollection(COLLECTIONS.DRIVERS, (drivers) => {
+      const activeDrivers = drivers.filter(driver => 
+        driver.status === 'active' || driver.status === 'approved' || driver.status === 'online'
+      );
+      const pendingDrivers = drivers.filter(driver => 
+        driver.status === 'pending' || driver.status === 'offline' || !driver.status
+      );
+      callback({ 
+        drivers: activeDrivers.length,
+        pendingDrivers: pendingDrivers.length
+      });
+    });
+    unsubscribeFunctions.push(unsubscribeDrivers);
+    
+    // Subscribe to orders
+    const unsubscribeOrders = this.subscribeToCollection(COLLECTIONS.ORDERS, (orders) => {
+      callback({ orders: orders.length });
+    });
+    unsubscribeFunctions.push(unsubscribeOrders);
+    
+    // Return cleanup function
+    return () => {
+      unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
+    };
   }
 }
 

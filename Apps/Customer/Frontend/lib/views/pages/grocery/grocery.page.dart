@@ -50,6 +50,7 @@ class _GroceryPageState extends State<GroceryPage>
             [
               //
               VendorHeader(
+                widget.vendorType,
                 model: model,
                 onrefresh: model.reloadPage,
               ),

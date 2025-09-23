@@ -1,0 +1,428 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions for role-based access control
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserId() {
+      return request.auth.uid;
+    }
+    
+    function getUserRole() {
+      // Assuming user roles are stored in a 'users' collection
+      return get(/databases/$(database)/documents/users/$(getUserId())).data.role;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+    
+    function isCustomer() {
+      return isAuthenticated() && getUserRole() == 'customer';
+    }
+    
+    function isDriver() {
+      return isAuthenticated() && getUserRole() == 'driver';
+    }
+    
+    function isVendor() {
+      return isAuthenticated() && getUserRole() == 'vendor';
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && getUserId() == userId;
+    }
+    
+    function isOwnerOrAdmin(userId) {
+      return isOwner(userId) || isAdmin();
+    }
+    
+    function isValidUser() {
+      return isCustomer() || isDriver() || isVendor() || isAdmin();
+    }
+    
+    // EXISTING RULES - Admin Users (preserved from original)
+    // Allow read/write access to admin_users collection for authenticated users
+    match /admin_users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow read access to admin_users collection for admin users
+    match /admin_users/{document=**} {
+      allow read: if request.auth != null;
+    }
+    
+    // Allow write access to admin_users collection for initial setup
+    match /admin_users/{document=**} {
+      allow write: if request.auth != null;
+    }
+    
+    // NEW RULES - Admin-specific collections for the admin panel
+    match /compliance_reports/{reportId} {
+      allow read, write: if isAdmin();
+      allow create: if isAdmin();
+    }
+
+    match /audit_logs/{documentId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin(); // Only admin actions should create audit logs
+      allow update, delete: if false; // Audit logs should be immutable
+    }
+
+    match /fare_settings/{documentId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /tracking/{documentId} {
+      allow read: if isAdmin() || isDriver(); // Admins and drivers can read tracking data
+      allow create, update: if isDriver(); // Only drivers can update their tracking data
+      allow delete: if isAdmin();
+    }
+
+    match /incidents/{incidentId} {
+      allow read: if isAdmin() || isOwner(resource.data.reportedBy) || isOwner(resource.data.assignedTo);
+      allow create: if isAuthenticated(); // Any authenticated user can report an incident
+      allow update: if isAdmin() || isOwner(resource.data.reportedBy) || isOwner(resource.data.assignedTo);
+      allow delete: if isAdmin();
+    }
+
+    match /payment_methods/{documentId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    match /tax_transactions/{documentId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /earnings/{documentId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create, update, delete: if isAdmin(); // Earnings are system-generated
+    }
+
+    match /payouts/{documentId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create, update, delete: if isAdmin(); // Payouts are system-generated
+    }
+
+    match /quick_picks/{documentId} {
+      allow read: if true; // Publicly readable
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /content_pages/{documentId} {
+      allow read: if true; // Publicly readable
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /faqs/{documentId} {
+      allow read: if true; // Publicly readable
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /tickets/{ticketId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isAuthenticated();
+      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /reports/{reportId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin(); // System generated or admin created
+      allow update, delete: if isAdmin();
+    }
+
+    match /helpdesk/{documentId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /airline_bookings/{bookingId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isCustomer() && isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /system_health/{documentId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /feature_flags/{flagId} {
+      allow read: if true; // Publicly readable for client-side logic
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /api_usage/{documentId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /security_events/{documentId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /performance_metrics/{documentId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // User profile management
+    match /users/{userId} {
+      allow read: if isOwnerOrAdmin(userId);
+      allow create: if isAuthenticated() && isOwner(userId) && 
+        request.resource.data.keys().hasAll(['name', 'email', 'phone', 'role', 'createdAt']) &&
+        request.resource.data.role in ['customer', 'driver', 'vendor'];
+      allow update: if isOwnerOrAdmin(userId) && 
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'createdAt']));
+      allow delete: if isAdmin();
+    }
+    
+    // Driver profiles and documents
+    match /drivers/{driverId} {
+      allow read: if isDriver() || isAdmin() || isVendor();
+      allow create: if isDriver() && isOwner(driverId) && 
+        request.resource.data.keys().hasAll(['name', 'email', 'phone', 'role', 'status', 'createdAt']);
+      allow update: if isOwnerOrAdmin(driverId) && 
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'createdAt']));
+      allow delete: if isAdmin();
+      
+      // Driver documents
+      match /documents/{documentId} {
+        allow read: if isOwnerOrAdmin(driverId) || isAdmin();
+        allow create: if isOwner(driverId) && 
+          request.resource.data.keys().hasAll(['type', 'url', 'status', 'uploadedAt']);
+        allow update: if isOwnerOrAdmin(driverId) && 
+          request.resource.data.status in ['pending', 'approved', 'rejected'];
+        allow delete: if isAdmin();
+      }
+      
+      // Driver vehicles
+      match /vehicles/{vehicleId} {
+        allow read: if isDriver() || isAdmin() || isVendor();
+        allow create: if isOwner(driverId) && 
+          request.resource.data.keys().hasAll(['make', 'model', 'year', 'plateNumber', 'color']);
+        allow update: if isOwnerOrAdmin(driverId);
+        allow delete: if isOwnerOrAdmin(driverId);
+      }
+    }
+    
+    // Vendor profiles and documents
+    match /vendors/{vendorId} {
+      allow read: if isVendor() || isAdmin() || isDriver();
+      allow create: if isVendor() && isOwner(vendorId) && 
+        request.resource.data.keys().hasAll(['name', 'email', 'phone', 'role', 'businessType', 'status', 'createdAt']);
+      allow update: if isOwnerOrAdmin(vendorId) && 
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'createdAt']));
+      allow delete: if isAdmin();
+      
+      // Vendor documents
+      match /documents/{documentId} {
+        allow read: if isOwnerOrAdmin(vendorId) || isAdmin();
+        allow create: if isOwner(vendorId) && 
+          request.resource.data.keys().hasAll(['type', 'url', 'status', 'uploadedAt']);
+        allow update: if isOwnerOrAdmin(vendorId) && 
+          request.resource.data.status in ['pending', 'approved', 'rejected'];
+        allow delete: if isAdmin();
+      }
+    }
+    
+    // Restaurant profiles and documents
+    match /restaurants/{restaurantId} {
+      allow read: if isValidUser();
+      allow create: if isAuthenticated() && 
+        request.resource.data.keys().hasAll(['name', 'email', 'phone', 'businessType', 'status', 'createdAt']);
+      allow update: if isOwner(restaurantId) || isAdmin();
+      allow delete: if isAdmin();
+      
+      // Restaurant documents
+      match /documents/{documentId} {
+        allow read: if isOwnerOrAdmin(restaurantId) || isAdmin();
+        allow create: if isOwner(restaurantId) && 
+          request.resource.data.keys().hasAll(['type', 'url', 'status', 'uploadedAt']);
+        allow update: if isOwnerOrAdmin(restaurantId) && 
+          request.resource.data.status in ['pending', 'approved', 'rejected'];
+        allow delete: if isAdmin();
+      }
+    }
+    
+    // Products and services
+    match /products/{productId} {
+      allow read: if isValidUser();
+      allow create: if isVendor() && 
+        request.resource.data.keys().hasAll(['name', 'description', 'price', 'category', 'vendorId', 'status', 'createdAt']) &&
+        request.resource.data.vendorId == getUserId();
+      allow update: if isOwner(request.resource.data.vendorId) || isAdmin();
+      allow delete: if isOwner(request.resource.data.vendorId) || isAdmin();
+    }
+    
+    match /services/{serviceId} {
+      allow read: if isValidUser();
+      allow create: if isVendor() && 
+        request.resource.data.keys().hasAll(['name', 'description', 'price', 'category', 'vendorId', 'status', 'createdAt']) &&
+        request.resource.data.vendorId == getUserId();
+      allow update: if isOwner(request.resource.data.vendorId) || isAdmin();
+      allow delete: if isOwner(request.resource.data.vendorId) || isAdmin();
+    }
+    
+    // Categories
+    match /categories/{categoryId} {
+      allow read: if isValidUser();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Orders and bookings
+    match /orders/{orderId} {
+      allow read: if isOwner(resource.data.customerId) || 
+        isOwner(resource.data.driverId) || 
+        isOwner(resource.data.vendorId) || 
+        isAdmin();
+      allow create: if isCustomer() && 
+        request.resource.data.keys().hasAll(['customerId', 'vendorId', 'items', 'total', 'status', 'createdAt']) &&
+        request.resource.data.customerId == getUserId();
+      allow update: if isOwner(resource.data.customerId) || 
+        isOwner(resource.data.driverId) || 
+        isOwner(resource.data.vendorId) || 
+        isAdmin();
+      allow delete: if isAdmin();
+      
+      // Order items
+      match /items/{itemId} {
+        allow read: if isOwner(resource.data.customerId) || 
+          isOwner(resource.data.driverId) || 
+          isOwner(resource.data.vendorId) || 
+          isAdmin();
+        allow create, update, delete: if isOwner(resource.data.customerId) || 
+          isOwner(resource.data.driverId) || 
+          isOwner(resource.data.vendorId) || 
+          isAdmin();
+      }
+    }
+    
+    // Driver locations (real-time tracking)
+    match /driver_locations/{driverId} {
+      allow read: if isDriver() || isAdmin() || isVendor();
+      allow create, update: if isOwner(driverId) && 
+        request.resource.data.keys().hasAll(['latitude', 'longitude', 'timestamp', 'isOnline']);
+      allow delete: if isAdmin();
+    }
+    
+    // Notifications
+    match /notifications/{notificationId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isAdmin() || 
+        (isValidUser() && request.resource.data.userId == getUserId());
+      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+    
+    // Payments and transactions
+    match /payments/{paymentId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isValidUser() && 
+        request.resource.data.userId == getUserId() &&
+        request.resource.data.keys().hasAll(['amount', 'currency', 'method', 'status', 'createdAt']);
+      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Ratings and reviews
+    match /ratings/{ratingId} {
+      allow read: if isValidUser();
+      allow create: if isValidUser() && 
+        request.resource.data.keys().hasAll(['userId', 'targetId', 'targetType', 'rating', 'review', 'createdAt']) &&
+        request.resource.data.userId == getUserId();
+      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+    
+    // Chat messages
+    match /chats/{chatId} {
+      allow read: if isAuthenticated() && 
+        (getUserId() in resource.data.participants || isAdmin());
+      allow create: if isValidUser() && 
+        getUserId() in request.resource.data.participants;
+      allow update: if isAuthenticated() && 
+        (getUserId() in resource.data.participants || isAdmin());
+      allow delete: if isAdmin();
+      
+      // Chat messages
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() && 
+          (getUserId() in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isAdmin());
+        allow create: if isValidUser() && 
+          getUserId() in get(/databases/$(database)/documents/chats/$(chatId)).data.participants &&
+          request.resource.data.senderId == getUserId();
+        allow update: if isOwner(request.resource.data.senderId) || isAdmin();
+        allow delete: if isOwner(request.resource.data.senderId) || isAdmin();
+      }
+    }
+    
+    // Analytics and reports (admin only)
+    match /analytics/{documentId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // System settings and configurations
+    match /settings/{settingId} {
+      allow read: if isValidUser();
+      allow write: if isAdmin();
+    }
+    
+    // Emergency and SOS
+    match /emergency/{emergencyId} {
+      allow read: if isDriver() || isAdmin();
+      allow create: if isDriver() && 
+        request.resource.data.keys().hasAll(['driverId', 'location', 'timestamp', 'status']) &&
+        request.resource.data.driverId == getUserId();
+      allow update: if isOwner(resource.data.driverId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // App configurations
+    match /app_config/{configId} {
+      allow read: if isValidUser();
+      allow write: if isAdmin();
+    }
+    
+    // Support and complaints
+    match /complaints/{complaintId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isValidUser() && 
+        request.resource.data.userId == getUserId() &&
+        request.resource.data.keys().hasAll(['title', 'description', 'status', 'createdAt']);
+      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Coupons and promotions
+    match /coupons/{couponId} {
+      allow read: if isValidUser();
+      allow create, update, delete: if isVendor() || isAdmin();
+    }
+    
+    // Favorites
+    match /favorites/{favoriteId} {
+      allow read, write: if isOwner(resource.data.userId);
+      allow create: if isValidUser() && 
+        request.resource.data.userId == getUserId();
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+    
+    // Default deny rule
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

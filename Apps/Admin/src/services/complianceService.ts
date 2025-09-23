@@ -283,63 +283,15 @@ class ComplianceService {
       return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        period: {
-          startDate: doc.data().period.startDate.toDate(),
-          endDate: doc.data().period.endDate.toDate()
-        },
+        period: doc.data().period || 'N/A',
         approvedAt: doc.data().approvedAt?.toDate(),
         submittedAt: doc.data().submittedAt?.toDate(),
-        createdAt: doc.data().createdAt.toDate(),
-        updatedAt: doc.data().updatedAt.toDate()
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        updatedAt: doc.data().updatedAt?.toDate() || new Date()
       })) as ComplianceReport[]
     } catch (error) {
       console.error('Error getting compliance reports:', error)
-      // Return mock data when Firebase permissions are not available
-      return [
-        {
-          id: '1',
-          reportType: 'monthly',
-          status: 'completed',
-          period: {
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-01-31')
-          },
-          generatedBy: 'admin',
-          generatedByName: 'System Admin',
-          createdAt: new Date('2024-02-01'),
-          updatedAt: new Date('2024-02-01'),
-          submittedAt: new Date('2024-02-01'),
-          approvedAt: new Date('2024-02-02')
-        },
-        {
-          id: '2',
-          reportType: 'quarterly',
-          status: 'pending',
-          period: {
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-03-31')
-          },
-          generatedBy: 'admin',
-          generatedByName: 'System Admin',
-          createdAt: new Date('2024-04-01'),
-          updatedAt: new Date('2024-04-01')
-        },
-        {
-          id: '3',
-          reportType: 'monthly',
-          status: 'completed',
-          period: {
-            startDate: new Date('2024-02-01'),
-            endDate: new Date('2024-02-29')
-          },
-          generatedBy: 'admin',
-          generatedByName: 'System Admin',
-          createdAt: new Date('2024-03-01'),
-          updatedAt: new Date('2024-03-01'),
-          submittedAt: new Date('2024-03-01'),
-          approvedAt: new Date('2024-03-02')
-        }
-      ] as ComplianceReport[]
+      throw error
     }
   }
 
@@ -706,15 +658,7 @@ class ComplianceService {
       }
     } catch (error) {
       console.error('Error getting compliance statistics:', error)
-      // Return mock data when Firebase permissions are not available
-      return {
-        totalReports: 12,
-        completedReports: 8,
-        pendingReports: 4,
-        complianceRate: 66.7,
-        pendingIssues: 4,
-        improvementRate: 15.2
-      }
+      throw error
     }
   }
 
@@ -723,29 +667,20 @@ class ComplianceService {
     try {
       const now = new Date()
       const report = {
-        type,
+        reportType: type,
         status: 'completed',
-        createdAt: now,
-        updatedAt: now,
+        period: type === 'monthly' ? 'Current Month' : 'Current Quarter',
         generatedBy: 'admin',
-        period: type === 'monthly' ? 'Current Month' : 'Current Quarter'
+        generatedByName: 'System Admin',
+        createdAt: now,
+        updatedAt: now
       }
       
-      const docRef = await addDoc(collection(db, 'compliance_reports'), report)
+      const docRef = await addDoc(collection(db, this.reportsCollection), report)
       return { id: docRef.id, ...report }
     } catch (error) {
       console.error('Error generating compliance report:', error)
-      // Return mock report when Firebase permissions are not available
-      const now = new Date()
-      return {
-        id: `mock_${Date.now()}`,
-        type,
-        status: 'completed',
-        createdAt: now,
-        updatedAt: now,
-        generatedBy: 'admin',
-        period: type === 'monthly' ? 'Current Month' : 'Current Quarter'
-      }
+      throw error
     }
   }
 }

@@ -50,6 +50,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [pendingVendors, setPendingVendors] = useState(0)
   const [pendingDrivers, setPendingDrivers] = useState(0)
+  const [approvedDrivers, setApprovedDrivers] = useState(0)
   const [pendingRestaurants, setPendingRestaurants] = useState(0)
   const [totalVendors, setTotalVendors] = useState(0)
   const [totalRestaurants, setTotalRestaurants] = useState(0)
@@ -208,7 +209,20 @@ export default function Dashboard() {
             (r.status !== 'active' && r.status !== 'approved' && r.is_active !== true)
           ).length
           setPendingRestaurants(pendingRestaurantsCount)
-      setPendingDrivers(pendingDriversData.length)
+      
+      // Calculate pending and approved drivers properly
+      const pendingDriversCount = allDrivers.filter(d => 
+        d.status === 'pending' || 
+        d.status === 'offline' ||
+        (d.status !== 'active' && d.status !== 'approved' && d.is_active !== true)
+      ).length
+      
+      const approvedDriversCount = allDrivers.filter(d => 
+        d.status === 'active' || d.status === 'approved' || d.is_active === true
+      ).length
+      
+      setPendingDrivers(pendingDriversCount)
+      setApprovedDrivers(approvedDriversCount)
       
       // Set total counts for UI
       setTotalVendors(allVendors.length)
@@ -339,7 +353,7 @@ export default function Dashboard() {
       {/* Additional Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Restaurants Requested</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Restaurant Statistics</h3>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Pending Approval:</span>
@@ -357,7 +371,7 @@ export default function Dashboard() {
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Vendors Requested</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Vendor Statistics</h3>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Pending Approval:</span>
@@ -375,7 +389,7 @@ export default function Dashboard() {
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Drivers Requested</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Driver Statistics</h3>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Pending Approval:</span>
@@ -383,7 +397,7 @@ export default function Dashboard() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Approved:</span>
-              <span className="font-medium text-green-600">{stats.drivers.overall - pendingDrivers}</span>
+              <span className="font-medium text-green-600">{approvedDrivers}</span>
             </div>
             <div className="flex justify-between text-sm font-semibold border-t pt-2">
               <span className="text-gray-800">Total:</span>

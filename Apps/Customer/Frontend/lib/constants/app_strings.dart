@@ -376,4 +376,14 @@ class AppStrings {
       'delivered',
     ];
   }
+
+  // Additional string constants for missing components
+  static String get reviews => "Reviews";
+  static String get vendors => "Vendors";
+  static String get products => "Products";
+  static String get featured => "Featured";
+  static String get featuredVendors => "Featured Vendors";
+  static String get nearbyVendors => "Nearby Vendors";
+  static String get bestSelling => "Best Selling";
+  static String get seeAll => "See All";
 }

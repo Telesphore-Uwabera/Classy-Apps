@@ -47,6 +47,7 @@ class _PharmacyPageState extends State<PharmacyPage>
             [
               //
               VendorHeader(
+                widget.vendorType,
                 model: model,
                 onrefresh: model.reloadPage,
               ),

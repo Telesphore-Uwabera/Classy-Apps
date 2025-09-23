@@ -5,15 +5,19 @@ class Api {
   // ===== FIREBASE CONFIGURATION =====
   static const bool useMockData = false;
   
-  // ===== FIREBASE BACKEND =====
+  // ===== NODE.JS API BACKEND =====
   static String get baseUrl {
-    return "firebase://classyapp-unified-backend";
+    if (kDebugMode) {
+      return "http://localhost:8000/api";
+    } else {
+      return "https://api.classy.app/api";
+    }
   }
   
   static bool get isDevelopment => false;
   
   static String get apiStatus {
-    return "Firebase Mode - Connected to Firebase Backend";
+    return "Node.js API Mode - Connected to Firebase Backend via Node.js";
   }
 
   // ===== FIRESTORE COLLECTIONS =====

@@ -21,23 +21,59 @@ export default function DriversRequested() {
   const [statusFilter, setStatusFilter] = useState('pending')
   const [drivers, setDrivers] = useState<DriverRequest[]>([])
   const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    pending: 0,
+    approved: 0,
+    total: 0
+  })
   
   useEffect(() => {
     loadPendingDrivers()
   }, [])
 
+  useEffect(() => {
+    loadPendingDrivers()
+  }, [statusFilter])
+
   const loadPendingDrivers = async () => {
     try {
       setLoading(true)
       
-      // Filter for pending drivers
+      // Get all drivers from Firebase
       const allDrivers = await firebaseService.getCollection('drivers')
-      const pendingDrivers = allDrivers.filter(driver => 
-        driver.status === 'pending' || 
-        (driver.status !== 'active' && driver.status !== 'approved' && driver.is_active !== true)
-      )
       
-      const driversWithDetails = pendingDrivers.map((driver: any) => ({
+      // Calculate stats
+      const pendingCount = allDrivers.filter(driver => 
+        driver.status === 'pending' || 
+        driver.status === 'offline' ||
+        (driver.status !== 'active' && driver.status !== 'approved' && driver.is_active !== true)
+      ).length
+      
+      const approvedCount = allDrivers.filter(driver => 
+        driver.status === 'active' || driver.status === 'approved' || driver.is_active === true
+      ).length
+      
+      setStats({
+        pending: pendingCount,
+        approved: approvedCount,
+        total: allDrivers.length
+      })
+      
+      // Filter drivers based on current status filter
+      let filteredDrivers = allDrivers
+      if (statusFilter === 'pending') {
+        filteredDrivers = allDrivers.filter(driver => 
+          driver.status === 'pending' || 
+          driver.status === 'offline' ||
+          (driver.status !== 'active' && driver.status !== 'approved' && driver.is_active !== true)
+        )
+      } else if (statusFilter === 'approved') {
+        filteredDrivers = allDrivers.filter(driver => 
+          driver.status === 'active' || driver.status === 'approved' || driver.is_active === true
+        )
+      }
+      
+      const driversWithDetails = filteredDrivers.map((driver: any) => ({
         id: driver.id,
         name: driver.name || 'Unknown Driver',
         email: driver.email || 'No email',
@@ -45,7 +81,7 @@ export default function DriversRequested() {
         vehicle: driver.serviceType === 'car_driver' ? 'Car' : 'Motorcycle',
         status: driver.status || 'pending',
         requestedDate: driver.createdAt?.toDate?.()?.toLocaleDateString() || 'Unknown',
-        location: driver.location || 'No location', // Keep as is, we'll handle rendering in JSX
+        location: driver.location || 'No location',
         serviceType: driver.serviceType || 'car_driver'
       }))
       
@@ -97,10 +133,10 @@ export default function DriversRequested() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-      <div>
+        <div>
           <h1 className="text-3xl font-bold text-gray-900">Driver Requests</h1>
           <p className="text-gray-600 mt-1">Review and approve pending driver applications from Firebase</p>
-      </div>
+        </div>
         <button
           onClick={loadPendingDrivers}
           className="flex items-center px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
@@ -108,6 +144,22 @@ export default function DriversRequested() {
           <RefreshCw className="w-4 h-4 mr-2" />
           Refresh
         </button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Pending Approval</h3>
+          <div className="text-3xl font-bold text-orange-600">{stats.pending}</div>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Approved</h3>
+          <div className="text-3xl font-bold text-green-600">{stats.approved}</div>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Total Drivers</h3>
+          <div className="text-3xl font-bold text-blue-600">{stats.total}</div>
+        </div>
       </div>
 
       {/* Search and Filter */}
@@ -129,6 +181,7 @@ export default function DriversRequested() {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
           >
             <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
             <option value="all">All Status</option>
           </select>
         </div>
@@ -148,6 +201,9 @@ export default function DriversRequested() {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Vehicle
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Location
@@ -186,6 +242,15 @@ export default function DriversRequested() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      driver.status === 'active' || driver.status === 'approved' 
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-orange-100 text-orange-800'
+                    }`}>
+                      {driver.status === 'active' || driver.status === 'approved' ? 'Approved' : 'Pending'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
                       {typeof driver.location === 'object' && driver.location 
                         ? `${driver.location.latitude?.toFixed(4) || 'N/A'}, ${driver.location.longitude?.toFixed(4) || 'N/A'}`
@@ -205,20 +270,24 @@ export default function DriversRequested() {
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button 
-                        onClick={() => handleApprove(driver.id)}
-                        className="text-green-600 hover:text-green-900"
-                        title="Approve Driver"
-                      >
+                      {(driver.status === 'pending' || driver.status === 'offline') && (
+                        <>
+                          <button 
+                            onClick={() => handleApprove(driver.id)}
+                            className="text-green-600 hover:text-green-900"
+                            title="Approve Driver"
+                          >
                             <Check className="w-4 h-4" />
                           </button>
-                      <button 
-                        onClick={() => handleReject(driver.id)}
-                        className="text-red-600 hover:text-red-900"
-                        title="Reject Driver"
-                      >
+                          <button 
+                            onClick={() => handleReject(driver.id)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Reject Driver"
+                          >
                             <X className="w-4 h-4" />
                           </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

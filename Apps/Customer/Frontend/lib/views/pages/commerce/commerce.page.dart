@@ -60,6 +60,7 @@ class _CommercePageState extends State<CommercePage>
           body: VStack([
             //location setion
             VendorHeader(
+              widget.vendorType,
               model: model,
               showSearch: false,
               onrefresh: model.reloadPage,
