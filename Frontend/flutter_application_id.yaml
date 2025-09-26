@@ -1,0 +1,7 @@
+flutter_application_id:
+  android:
+    id: "com.classy.customer"
+    name: "Classy"
+  ios:
+    id: "com.classy.customer"
+    name: "Classy"
