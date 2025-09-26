@@ -119,14 +119,6 @@ class PlainWelcomeHeaderSection extends StatelessWidget {
                       color: Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.grey.shade200),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          spreadRadius: 1,
-                          blurRadius: 3,
-                          offset: Offset(0, 1),
-                        ),
-                      ],
                     ),
                     child: Row(
                       children: [
@@ -167,8 +159,6 @@ class PlainWelcomeHeaderSection extends StatelessWidget {
                       ],
                     ),
                   ).py(15).onTap(() {
-                    _openPaymentMethodSelection(context);
-                  }).onInkTap(() {
                     _openPaymentMethodSelection(context);
                   }),
                 );
