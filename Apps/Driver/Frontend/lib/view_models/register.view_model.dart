@@ -175,10 +175,8 @@ class RegisterViewModel extends MyBaseViewModel with QrcodeScannerTrait {
             'updatedAt': FieldValue.serverTimestamp(),
           });
           
-          await AlertService.success(
-            title: "Become a partner".tr(),
-            text: "Registration successful! Your account is pending approval.",
-          );
+          // Show detailed success message with approval information
+          _showRegistrationSuccessDialog();
         }
         
       } catch (error) {
@@ -188,5 +186,82 @@ class RegisterViewModel extends MyBaseViewModel with QrcodeScannerTrait {
         setBusy(false);
       }
     }
+  }
+
+  void _showRegistrationSuccessDialog() {
+    showDialog(
+      context: viewContext,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green, size: 28),
+            SizedBox(width: 10),
+            Text('Registration Successful!'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Your driver account has been created successfully.',
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 16),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange[200]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.hourglass_empty, color: Colors.orange[700], size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Pending Admin Approval',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Your account is currently under review by our admin team. You will receive a notification once your account is approved.',
+                    style: TextStyle(color: Colors.orange[700]),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'What happens next?',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('• Admin will review your application'),
+            Text('• You will receive an email/SMS notification'),
+            Text('• Once approved, you can login to the app'),
+            Text('• This process usually takes 24-48 hours'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close dialog
+              Navigator.of(context).pop(); // Go back to login
+            },
+            child: Text('Got it', style: TextStyle(fontSize: 16)),
+          ),
+        ],
+      ),
+    );
   }
 }

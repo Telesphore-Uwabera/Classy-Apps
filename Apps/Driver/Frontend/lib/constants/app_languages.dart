@@ -13,7 +13,8 @@ class AppLanguages {
         "ru",
         "my",
         "zh",
-        "ja"
+        "ja",
+        "ro"
       ];
   static List<String> get names => [
         "English",
@@ -28,11 +29,12 @@ class AppLanguages {
         "Russian",
         "Myanmar",
         "Chinese",
-        "Japanese"
+        "Japanese",
+        "Romanian"
       ];
 
   static List<String> get flags => [
-        "US",
+        "GB",
         "AE",
         "FR",
         "ES",
@@ -44,6 +46,7 @@ class AppLanguages {
         "RU",
         "MY",
         "CN",
-        "JP"
+        "JP",
+        "RO"
       ];
 }

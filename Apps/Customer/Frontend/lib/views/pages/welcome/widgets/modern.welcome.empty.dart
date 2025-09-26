@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:Classy/constants/app_colors.dart';
+import 'package:Classy/constants/app_routes.dart';
 import 'package:Classy/constants/app_strings.dart';
 import 'package:Classy/constants/home_screen.config.dart';
 import 'package:Classy/enums/product_fetch_data_type.enum.dart';
@@ -11,9 +13,11 @@ import 'package:Classy/views/pages/vendor/widgets/section_products.view.dart';
 import 'package:Classy/views/pages/vendor/widgets/section_vendors.view.dart';
 import 'package:Classy/views/pages/welcome/widgets/welcome_header.section.dart';
 import 'package:Classy/widgets/cards/custom.visibility.dart';
-import 'package:Classy/widgets/finance/wallet_management.view.dart';
+// Wallet functionality removed - using Eversend, MoMo, and card payments only
 import 'package:Classy/widgets/list_items/modern_vendor_type.vertical_list_item.dart';
 import 'package:Classy/widgets/states/loading.shimmer.dart';
+import 'package:Classy/views/shared/payment_method_selection.page.dart';
+import 'package:Classy/models/payment_method.dart';
 import 'package:localize_and_translate/localize_and_translate.dart';
 import 'package:masonry_grid/masonry_grid.dart';
 import 'package:velocity_x/velocity_x.dart';
@@ -30,7 +34,65 @@ class ModernEmptyWelcome extends StatelessWidget {
       VStack([
             //finance section
             if (HomeScreenConfig.showWalletOnHomeScreen && vm.isAuthenticated())
-              WalletManagementView(),
+              // Payment Methods - Clickable card that redirects to payment methods page
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 3,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.payment,
+                      color: AppColor.primaryColor,
+                      size: 24,
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Payment Methods",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            "Eversend, MoMo, Card",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
+                  ],
+                ),
+              ).onTap(() {
+                _openPaymentMethodSelection(context);
+              }).onInkTap(() {
+                _openPaymentMethodSelection(context);
+              }),
 
             //top banner
             if ((HomeScreenConfig.showBannerOnHomeScreen &&
@@ -126,5 +188,28 @@ class ModernEmptyWelcome extends StatelessWidget {
           .make()
           .expand(),
     ]);
+  }
+
+  void _openPaymentMethodSelection(BuildContext context) async {
+    // Create a list of available payment methods
+    final List<PaymentMethod> paymentMethods = [
+      PaymentMethod.eversend(),
+      PaymentMethod.momo(),
+      PaymentMethod.card(),
+    ];
+
+    // Navigate to the shared payment method selection page
+    final selectedPaymentMethod = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => PaymentMethodSelectionPage(
+          list: paymentMethods,
+        ),
+      ),
+    );
+
+    // Handle the selected payment method if needed
+    if (selectedPaymentMethod != null) {
+      print("Selected payment method: ${selectedPaymentMethod.name}");
+    }
   }
 }

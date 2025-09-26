@@ -4,8 +4,7 @@ import 'package:Classy/utils/ui_spacer.dart';
 import 'package:Classy/widgets/base.page.dart';
 import 'package:Classy/widgets/buttons/custom_button.dart';
 import 'package:Classy/services/cart_api.service.dart';
-import 'package:Classy/requests/wallet.request.dart';
-import 'package:Classy/models/wallet.dart';
+// Wallet functionality removed - using Eversend, MoMo, and card payments only
 import 'package:Classy/widgets/enhanced_location_search.dart';
 import 'package:localize_and_translate/localize_and_translate.dart';
 import 'package:velocity_x/velocity_x.dart';
@@ -35,7 +34,7 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
   bool _isLoading = true;
   
   final CartApiService _cartApiService = CartApiService();
-  final WalletRequest _walletRequest = WalletRequest();
+  // Payment methods: Eversend, MoMo, and Card payments only
 
   List<Map<String, dynamic>> _orderItems = [];
   double _walletBalance = 0.0;
@@ -54,9 +53,9 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
         _isLoadingWallet = true;
       });
       
-      final wallet = await _walletRequest.walletBalance();
+      // Wallet functionality removed - using Eversend, MoMo, and card payments only
       setState(() {
-        _walletBalance = wallet.balance ?? 0.0;
+        _walletBalance = 0.0; // Wallet functionality removed
         _isLoadingWallet = false;
       });
     } catch (e) {

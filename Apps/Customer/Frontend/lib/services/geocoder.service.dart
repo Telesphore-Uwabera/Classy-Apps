@@ -27,54 +27,80 @@ class GeocoderService extends HttpService {
   }) async {
     //use backend api
     if (!AppMapSettings.useGoogleOnApp) {
-      final apiresult = await get(
-        Api.geocoderForward,
-        queryParameters: {
-          "lat": coordinates.latitude,
-          "lng": coordinates.longitude,
-          "limit": limit,
-        },
-      );
+      try {
+        final apiresult = await get(
+          Api.geocoderForward,
+          queryParameters: {
+            "lat": coordinates.latitude,
+            "lng": coordinates.longitude,
+            "limit": limit,
+          },
+        );
 
-      //
-      final apiResponse = ApiResponse.fromResponse(apiresult);
-      if (apiResponse.allGood) {
-        return (apiResponse.data).map((e) {
-          // return Address().fromServerMap(e);
-          Address address;
-          try {
-            address = Address().fromMap(e);
-          } catch (error) {
-            address = Address().fromServerMap(e);
-          }
-          return address;
-        }).toList();
+        //
+        final apiResponse = ApiResponse.fromResponse(apiresult);
+        if (apiResponse.allGood) {
+          return (apiResponse.data).map((e) {
+            // return Address().fromServerMap(e);
+            Address address;
+            try {
+              address = Address().fromMap(e);
+            } catch (error) {
+              address = Address().fromServerMap(e);
+            }
+            return address;
+          }).toList();
+        }
+      } catch (e) {
+        print('Geocoder API error: $e');
+        // Return a fallback address when API is not available
+        return [
+          Address(
+            addressLine: "Current Location",
+            coordinates: coordinates,
+            featureName: "Unknown City",
+            adminArea: "Unknown State",
+            countryName: "Unknown Country",
+          )
+        ];
       }
-
-      return [];
     }
     //use in-app geocoding
     final apiKey = AppStrings.googleMapApiKey;
     String url =
         "https://maps.googleapis.com/maps/api/geocode/json?latlng=${coordinates.toString()};key=$apiKey&radius=200";
 
-    final apiResult = await get(
-      Api.externalRedirect,
-      queryParameters: {"endpoint": url},
-    );
+    try {
+      final apiResult = await get(
+        Api.externalRedirect,
+        queryParameters: {"endpoint": url},
+      );
 
-    final apiResponse = ApiResponse.fromResponse(apiResult);
+      final apiResponse = ApiResponse.fromResponse(apiResult);
 
-    //
-    if (apiResponse.allGood) {
-      Map<String, dynamic> apiResponseData = apiResponse.body;
-      return (apiResponseData["results"] as List).map((e) {
-        try {
-          return Address().fromMap(e);
-        } catch (error) {
-          return Address().fromServerMap(e);
-        }
-      }).toList();
+      //
+      if (apiResponse.allGood) {
+        Map<String, dynamic> apiResponseData = apiResponse.body;
+        return (apiResponseData["results"] as List).map((e) {
+          try {
+            return Address().fromMap(e);
+          } catch (error) {
+            return Address().fromServerMap(e);
+          }
+        }).toList();
+      }
+    } catch (e) {
+      print('Google Maps API error: $e');
+      // Return a fallback address when Google Maps API is not available
+      return [
+        Address(
+          addressLine: "Current Location",
+          coordinates: coordinates,
+          featureName: "Unknown City",
+          adminArea: "Unknown State",
+          countryName: "Unknown Country",
+        )
+      ];
     }
     return [];
   }

@@ -1,30 +1,31 @@
-import 'package:dio/dio.dart';
-import 'package:fuodz/constants/api.dart';
 import 'package:fuodz/models/api_response.dart';
-import 'package:fuodz/services/http.service.dart';
-import 'package:localize_and_translate/localize_and_translate.dart';
 
-class SettingsRequest extends HttpService {
-  //
-  Future<ApiResponse> appSettings() async {
-    final apiResult = await get(Api.appSettings);
-    return ApiResponse.fromResponse(apiResult);
-  }
-
-  Future<ApiResponse> appOnboardings() async {
-    try {
-      final apiResult = await get(Api.appOnboardings);
-      return ApiResponse.fromResponse(apiResult);
-    } on DioException catch (error) {
-      if (error.type == DioExceptionType.unknown) {
-        throw "Connection failed. Please check that your have internet connection on this device."
-                .tr() +
-            "\n" +
-            "Try again later".tr();
-      }
-      throw error;
-    } catch (error) {
-      throw error;
-    }
+class SettingsRequest {
+  static Future<ApiResponse> appSettings() async {
+    // Mock settings response
+    return ApiResponse(
+      code: 200,
+      message: "Settings loaded successfully",
+      body: {
+        'app_name': 'Classy Driver',
+        'app_version': '1.0.0',
+        'currency': 'USD',
+        'strings': {
+          'app_name': 'Classy Driver',
+          'company_name': 'Classy Inc',
+          'currency_symbol': '\$',
+          'country_code': 'US',
+        },
+        'colors': {
+          'primaryColor': '#E91E63',
+          'primaryColorDark': '#D81B60',
+          'accentColor': '#E91E63',
+        },
+        'websocket': {
+          'url': 'wss://classy.app/ws',
+          'enabled': true,
+        },
+      },
+    );
   }
 }

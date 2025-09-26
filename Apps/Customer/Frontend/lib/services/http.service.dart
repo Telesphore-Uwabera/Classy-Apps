@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:dio_http_cache_lts/dio_http_cache_lts.dart';
 import 'package:Classy/constants/api.dart';
-import 'package:Classy/services/location.service.dart';
+import 'package:Classy/services/simple_location.dart';
 // import 'package:geolocator/geolocator.dart';
 import 'package:localize_and_translate/localize_and_translate.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -27,34 +27,18 @@ class HttpService {
     double? cLng;
     //
     try {
-      /*
-      if (LocationService.currenctAddress == null) {
-        bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-
-        if (serviceEnabled) {
-          final permission = await Geolocator.checkPermission();
-          if (permission == LocationPermission.whileInUse) {
-            if (LocationService.currenctAddress == null) {
-              final cLoc = await Geolocator.getCurrentPosition(
-                timeLimit: 100.milliseconds,
-              );
-              cLat = cLoc.latitude;
-              cLng = cLoc.longitude;
-            } else {
-              cLat = LocationService.currenctAddress!.coordinates!.latitude;
-              cLng = LocationService.currenctAddress!.coordinates!.longitude;
-            }
-          }
+      // Use simple location service
+      try {
+        final position = await SimpleLocationService.getCurrentPosition();
+        if (position != null) {
+          cLat = position.latitude;
+          cLng = position.longitude;
         }
-      } else {
-        cLat = LocationService.currenctAddress!.coordinates!.latitude;
-        cLng = LocationService.currenctAddress!.coordinates!.longitude;
+      } catch (e) {
+        print('Location error in HTTP service: $e');
       }
-      */
 
-      //
-      cLat = LocationService.currenctAddress?.coordinates?.latitude;
-      cLng = LocationService.currenctAddress?.coordinates?.longitude;
+      // Location coordinates are set above
     } catch (error) {
       print("Error ==> $error");
     }

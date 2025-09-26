@@ -51,9 +51,11 @@ class Api {
   static const String favourites = "favourites";
   static const String search = "search";
   static const String tags = "tags";
-  static const String walletBalance = "walletBalance";
-  static const String walletTransactions = "walletTransactions";
-  static const String loyaltyPoints = "loyaltyPoints";
+  // Payment methods: Eversend, MoMo, and Card payments only
+  static const String availablePaymentMethods = "availablePaymentMethods";
+  static const String eversendPayment = "eversendPayment";
+  static const String momoPayment = "momoPayment";
+  static const String cardPayment = "cardPayment";
   static const String flashSales = "flashSales";
   static const String packageTypes = "packageTypes";
   static const String vendorTypes = "vendorTypes";
@@ -87,10 +89,10 @@ class Api {
   static const String rating = "rating";
   static const String searchData = "searchData";
   static const String favouriteVendors = "favouriteVendors";
-  static const String myWalletAddress = "myWalletAddress";
-  static const String walletAddressesSearch = "walletAddressesSearch";
-  static const String walletTopUp = "walletTopUp";
-  static const String walletTransfer = "walletTransfer";
+  // Payment processing endpoints
+  static const String processPayment = "processPayment";
+  static const String paymentStatus = "paymentStatus";
+  static const String refundPayment = "refundPayment";
   static const String myLoyaltyPoints = "myLoyaltyPoints";
   static const String loyaltyPointsReport = "loyaltyPointsReport";
   static const String loyaltyPointsWithdraw = "loyaltyPointsWithdraw";
@@ -100,6 +102,17 @@ class Api {
   static const String generalOrderDeliveryFeeSummary = "generalOrderDeliveryFeeSummary";
   static const String generalOrderSummary = "generalOrderSummary";
   static const String serviceOrderSummary = "serviceOrderSummary";
+  
+  // ===== TAXI API ENDPOINTS =====
+  static const String vehicleTypes = "vehicleTypes";
+  static const String vehicleTypePricing = "vehicleTypePricing";
+  static const String taxiLocationAvailable = "taxiLocationAvailable";
+  static const String newTaxiBooking = "newTaxiBooking";
+  static const String currentTaxiBooking = "currentTaxiBooking";
+  static const String cancelTaxiBooking = "cancelTaxiBooking";
+  static const String taxiDriverInfo = "taxiDriverInfo";
+  static const String taxiTripLocationHistory = "taxiTripLocationHistory";
+  static const String lastRatebleTaxiBooking = "lastRatebleTaxiBooking";
   
   // ===== FIREBASE AUTH METHODS =====
   static const String authMethod = "firebase_auth";

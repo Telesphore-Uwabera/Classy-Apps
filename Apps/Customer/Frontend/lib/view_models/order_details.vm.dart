@@ -302,7 +302,7 @@ class OrderDetailsViewModel extends CheckoutBaseViewModel {
       //
       ApiResponse apiResponse = await orderRequest.updateOrderPaymentMethod(
         id: order.id,
-        paymentMethodId: paymentMethod?.id,
+        paymentMethodId: int.tryParse(paymentMethod?.id ?? '0'),
         status: "pending",
       );
 

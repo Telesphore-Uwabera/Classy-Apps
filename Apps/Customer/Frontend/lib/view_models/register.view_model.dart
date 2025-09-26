@@ -8,6 +8,7 @@ import 'package:Classy/constants/app_strings.dart';
 import 'package:Classy/requests/auth.request.dart';
 import 'package:Classy/services/alert.service.dart';
 import 'package:Classy/services/auth.service.dart';
+import 'package:Classy/services/firebase_error.service.dart';
 import 'package:Classy/services/firebase.service.dart';
 import 'package:Classy/utils/utils.dart';
 import 'package:Classy/widgets/bottomsheets/account_verification_entry.dart';
@@ -212,51 +213,28 @@ class RegisterViewModel extends MyBaseViewModel {
     setBusy(true);
 
     try {
-      // Use Firebase authentication for registration
+      // Use AuthRequest for proper registration handling
       final phoneNumber = accountPhoneNumber!;
-      final email = emailTEC.text.isNotEmpty ? emailTEC.text : "${phoneNumber.replaceAll('+', '').replaceAll(' ', '')}@classy.app";
       
-      print("🔥 Starting Firebase registration for: $email");
+      print("🔥 Starting Firebase registration for: $phoneNumber");
       
-      // Create user with Firebase
-      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: passwordTEC.text,
-      ).catchError((error) {
-        print("❌ Firebase registration error: $error");
-        throw error;
+      final apiResponse = await AuthRequest.registerRequest({
+        'name': nameTEC.text,
+        'phone': phoneNumber,
+        'password': passwordTEC.text,
+        'email': emailTEC.text,
+        'country_code': selectedCountry!.countryCode,
+        'referral_code': referralCodeTEC.text,
       });
       
-      if (userCredential.user != null) {
-        // Update user profile with additional information
-        await userCredential.user!.updateDisplayName(nameTEC.text);
+      if (apiResponse.code == 200) {
+        print("✅ Registration successful, saving user data...");
         
-        // Save user data to Firestore
-        try {
-          await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
-            'name': nameTEC.text,
-            'email': emailTEC.text,
-            'phone': phoneNumber,
-            'countryCode': selectedCountry!.countryCode,
-            'referralCode': referralCodeTEC.text,
-            'role': 'customer',
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-          print("✅ User data saved to Firestore");
-        } catch (firestoreError) {
-          print("⚠️ Firestore error (non-critical): $firestoreError");
-          // Continue with registration even if Firestore fails
-        }
+        // Save user data and set authentication state
+        final user = await AuthServices.saveUser(apiResponse.body['user']);
+        await AuthServices.isAuthenticated();
         
-        // Save user data locally
-        await AuthServices.saveUser({
-          'id': userCredential.user!.uid,
-          'name': nameTEC.text,
-          'email': emailTEC.text,
-          'phone': phoneNumber,
-          'country_code': selectedCountry!.countryCode,
-        });
+        print("✅ User data saved, navigating to home...");
         
         // Registration completed successfully
         setBusy(false);
@@ -264,64 +242,40 @@ class RegisterViewModel extends MyBaseViewModel {
           AppRoutes.homeRoute,
           (_) => false,
         );
+        
+        print("✅ Registration and navigation completed");
+      } else {
+        setBusy(false);
+        viewContext.showToast(
+          msg: apiResponse.message ?? "Registration failed", 
+          bgColor: Colors.red
+        );
       }
       
+    } on FirebaseAuthException catch (e) {
+      setBusy(false);
+      print("Firebase Auth error: ${e.code} - ${e.message}");
+      
+      String errorMessage = FirebaseErrorService.handleAuthException(e);
+      
+      viewContext.showToast(
+        msg: errorMessage,
+        bgColor: Colors.red,
+      );
     } catch (error) {
       setBusy(false);
-      print("Firebase registration error: $error");
+      print("General registration error: $error");
       
-      // Try fallback registration for web compatibility
-      if (kIsWeb) {
-        print("🌐 Attempting fallback registration for web...");
-        try {
-          await _fallbackRegistration();
-          return;
-        } catch (fallbackError) {
-          print("❌ Fallback registration also failed: $fallbackError");
-        }
-      }
+      // Handle errors with user-friendly messages
+      String errorMessage = FirebaseErrorService.getUserFriendlyMessage(error);
       
-      // Handle specific Firebase errors
-      String errorMessage = "Registration failed. Please try again.";
-      if (error.toString().contains('email-already-in-use')) {
-        errorMessage = "An account with this phone number already exists.";
-      } else if (error.toString().contains('weak-password')) {
-        errorMessage = "Password is too weak. Please choose a stronger password.";
-      } else if (error.toString().contains('invalid-email')) {
-        errorMessage = "Invalid phone number format.";
-      }
-      
-      AlertService.error(
-        title: "Registration Failed".tr(),
-        text: errorMessage,
+      viewContext.showToast(
+        msg: errorMessage,
+        bgColor: Colors.red,
       );
     }
   }
 
-  // Fallback registration for web compatibility
-  Future<void> _fallbackRegistration() async {
-    print("🔄 Using fallback registration method");
-    
-    // Create a mock user ID
-    final userId = "user_${DateTime.now().millisecondsSinceEpoch}";
-    
-    // Save user data locally without Firebase
-    await AuthServices.saveUser({
-      'id': userId,
-      'name': nameTEC.text,
-      'email': emailTEC.text,
-      'phone': accountPhoneNumber!,
-      'country_code': selectedCountry!.countryCode,
-    });
-    
-    print("✅ Fallback registration completed");
-    
-    // Navigate to home
-    Navigator.of(viewContext).pushNamedAndRemoveUntil(
-      AppRoutes.homeRoute,
-      (_) => false,
-    );
-  }
 
   void openLogin() async {
     viewContext.pop();

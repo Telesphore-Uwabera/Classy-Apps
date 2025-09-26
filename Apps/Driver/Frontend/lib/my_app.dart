@@ -1,112 +1,64 @@
+import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_dropdown_alert/dropdown_alert.dart';
+import 'package:fuodz/constants/app_theme.dart';
+import 'package:fuodz/services/app.service.dart';
 import 'package:fuodz/views/pages/splash.page.dart';
-import 'package:fuodz/views/pages/welcome.page.dart';
-import 'package:fuodz/views/pages/language_selection.page.dart';
-import 'package:fuodz/views/pages/auth/login.page.dart';
-import 'package:fuodz/views/pages/auth/register.page.dart';
-import 'package:fuodz/views/pages/auth/forgot_password.page.dart';
-
-import 'package:fuodz/services/language.service.dart';
-import 'package:provider/provider.dart';
-import 'package:fuodz/views/pages/dashboard/dashboard.page.dart';
-import 'package:fuodz/views/pages/ride_requests/ride_requests.page.dart';
-import 'package:fuodz/views/pages/home/home.page.dart';
-import 'package:fuodz/views/pages/bookings/ongoing_service.page.dart';
-import 'package:fuodz/views/pages/wallet/wallet.page.dart';
-import 'package:fuodz/views/pages/profile/profile.page.dart';
-import 'package:fuodz/views/pages/emergency_sos/emergency_sos.page.dart';
-import 'package:fuodz/views/pages/notifications/notifications.page.dart';
-import 'package:fuodz/views/pages/complaints/complaints.page.dart';
-import 'package:fuodz/views/pages/about_us/about_us.page.dart';
-import 'package:fuodz/views/pages/edit_profile/edit_profile.page.dart';
-import 'package:fuodz/views/pages/my_vehicles/my_vehicles.page.dart';
-import 'package:fuodz/views/pages/my_documents/my_documents.page.dart';
-import 'package:fuodz/views/pages/settings.page.dart';
-import 'package:fuodz/views/pages/service_history.page.dart';
+import 'package:localize_and_translate/localize_and_translate.dart';
+import 'constants/app_strings.dart';
+import 'package:fuodz/services/router.service.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => LanguageService()..initialize(),
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: "Classy Driver",
-        home: SplashPage(),
-        routes: {
-          '/welcome': (context) => WelcomePage(),
-          '/language': (context) => LanguageSelectionPage(),
-          '/login': (context) => LoginPage(),
-          '/register': (context) => RegisterPage(),
-          '/forgot-password': (context) => ForgotPasswordPage(),
-
-                                '/dashboard': (context) => DashboardPage(),
-                      '/ride-requests': (context) => RideRequestsPage(),
-                      '/home': (context) => HomePage(),
-          '/bookings': (context) => OngoingServicePage(),
-          '/ongoing-service': (context) => OngoingServicePage(),
-          '/service-history': (context) => ServiceHistoryPage(),
-          '/wallet': (context) => WalletPage(),
-          '/profile': (context) => ProfilePage(),
-          '/emergency-sos': (context) => EmergencySosPage(),
-          '/notifications': (context) => NotificationsPage(),
-          '/complaints': (context) => ComplaintsPage(),
-          '/about-us': (context) => AboutUsPage(),
-          '/edit-profile': (context) => EditProfilePage(),
-          '/my-vehicles': (context) => MyVehiclesPage(),
-          '/my-documents': (context) => MyDocumentsPage(),
-          '/settings': (context) => SettingsPage(),
-        },
-        theme: ThemeData(
-          primarySwatch: Colors.pink,
-          primaryColor: Color(0xFFE91E63),
-          scaffoldBackgroundColor: Colors.grey[50],
-          appBarTheme: AppBarTheme(
-            backgroundColor: Color(0xFFE91E63),
-            foregroundColor: Colors.white,
-            elevation: 0,
-            centerTitle: true,
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFFE91E63),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+    //
+    return AdaptiveTheme(
+      light: AppTheme().lightTheme(),
+      dark: AppTheme().darkTheme(),
+      initial: kIsWeb ? AdaptiveThemeMode.light : AdaptiveThemeMode.system,
+      builder: (theme, darkTheme) {
+        return MaterialApp(
+          navigatorKey: AppService().navigatorKey,
+          debugShowCheckedModeBanner: false,
+          title: AppStrings.appName,
+          onGenerateRoute: RouterService.generateRoute,
+          onUnknownRoute: (RouteSettings settings) {
+            // open your app when is executed from outside when is terminated.
+            return RouterService.generateRoute(settings);
+          },
+          // initialRoute: _startRoute,
+          localizationsDelegates: translator.delegates,
+          locale: translator.activeLocale,
+          supportedLocales: translator.locals(),
+          builder: (context, child) {
+            final content = Stack(children: [child!, DropdownAlert()]);
+            if (!kIsWeb) return content;
+            // On web, constrain to a phone-like viewport and also override MediaQuery width
+            const double appWidth = 390;
+            final mq = MediaQuery.of(context);
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: appWidth),
+                child: MediaQuery(
+                  data: mq.copyWith(
+                    size: Size(appWidth, mq.size.height),
+                  ),
+                  child: Container(
+                    color: theme.scaffoldBackgroundColor,
+                    child: content,
+                  ),
+                ),
               ),
-              elevation: 2,
-            ),
-          ),
-          outlinedButtonTheme: OutlinedButtonThemeData(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Color(0xFFE91E63),
-              side: BorderSide(color: Color(0xFFE91E63)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Color(0xFFE91E63), width: 2),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-          ),
-          cardTheme: CardThemeData(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-        ),
-      ),
+            );
+          },
+          home: SplashPage(),
+          theme: theme,
+          darkTheme: darkTheme,
+        );
+      },
     );
   }
 }

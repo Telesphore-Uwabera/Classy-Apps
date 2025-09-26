@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:Classy/my_app.dart';
@@ -11,6 +11,14 @@ import 'package:Classy/services/cart.service.dart';
 import 'package:Classy/services/general_app.service.dart';
 import 'package:Classy/services/local_storage.service.dart';
 import 'package:Classy/services/firebase.service.dart';
+import 'package:Classy/services/firebase_init.service.dart';
+import 'package:Classy/services/firebase_auth_complete.service.dart';
+import 'package:Classy/services/firebase_web_auth_fixed.service.dart';
+import 'package:Classy/services/auth_debug.service.dart';
+import 'package:Classy/services/auth_fix.service.dart';
+import 'package:Classy/services/auth_test.service.dart';
+import 'package:Classy/services/auth_error_analysis.service.dart';
+import 'package:Classy/services/auth_comprehensive_test.service.dart';
 import 'package:Classy/services/notification.service.dart';
 import 'package:localize_and_translate/localize_and_translate.dart';
 
@@ -31,17 +39,44 @@ void main() async {
     () async {
       WidgetsFlutterBinding.ensureInitialized();
       
-      // Firebase initialization - only initialize if not on web or if web config exists
+      // Firebase initialization using our complete service
       try {
-        if (!kIsWeb) {
-          await Firebase.initializeApp();
-        } else {
-          // Check if Firebase web config exists before initializing
-          // For now, skip Firebase on web to prevent errors
-          print("Firebase initialization skipped on web platform");
-        }
+        await FirebaseInitService.initialize();
+        await FirebaseAuthCompleteService.initialize();
+        await FirebaseWebAuthFixedService.initialize();
+        print("✅ Firebase initialized successfully");
+        
+                // Debug authentication issues if in debug mode
+                if (kDebugMode) {
+                  print("\n🔍 Running authentication diagnostics...");
+                  await AuthDebugService.debugAuthIssues();
+                  
+                  print("\n🔧 Applying authentication fixes...");
+                  await AuthFixService.fixAllAuthIssues();
+                  
+                  print("\n🧪 Testing authentication after fixes...");
+                  await AuthFixService.testAuthAfterFixes();
+                  
+                  print("\n🏥 Checking authentication health...");
+                  await AuthFixService.getAuthHealthStatus();
+                  
+                  print("\n📊 Analyzing authentication errors...");
+                  await AuthErrorAnalysisService.analyzeAndSolveErrors();
+                  
+                  print("\n📋 Generating detailed error report...");
+                  await AuthErrorAnalysisService.getDetailedErrorReport();
+                  
+                  print("\n🧪 Running comprehensive authentication test...");
+                  await AuthComprehensiveTestService.runCompleteAuthTest();
+                  
+                  print("\n📊 Current authentication status...");
+                  await AuthComprehensiveTestService.printAuthStatus();
+                }
+        
       } catch (e) {
-        print("Firebase initialization error: $e");
+        print("❌ Firebase initialization error: $e");
+        print("❌ Error type: ${e.runtimeType}");
+        print("❌ Error details: ${e.toString()}");
         // Continue without Firebase if there's an error
       }
 

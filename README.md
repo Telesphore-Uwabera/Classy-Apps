@@ -1,4 +1,4 @@
-# 🚀 Classy - Multi-App Platform
+flutter# 🚀 Classy - Multi-App Platform
 
 A comprehensive multi-application platform built with Flutter frontends and Firebase backend, featuring real-time notifications, Google Maps integration, and cloud-based data management. This platform provides a complete solution for grocery stores, food delivery, pharmacy services, and parcel courier delivery.
 
@@ -53,7 +53,7 @@ A comprehensive multi-application platform built with Flutter frontends and Fire
 ### 🎛️ Admin Dashboard
 - **Purpose**: Comprehensive administrative control panel for platform management
 - **Features**:
-  - User management (customers, vendors, drivers)
+  - User management (customers, vendors, driversYeah )
   - Order management and status tracking
   - Content management (FAQs, policies, categories)
   - Analytics and reporting dashboard

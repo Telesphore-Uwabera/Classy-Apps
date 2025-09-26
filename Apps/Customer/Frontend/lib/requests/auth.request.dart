@@ -5,6 +5,11 @@ import 'package:flutter/foundation.dart';
 import 'package:Classy/models/api_response.dart';
 import 'package:Classy/services/http.service.dart';
 import 'package:Classy/services/auth.service.dart';
+import 'package:Classy/services/firebase_web.service.dart';
+import 'package:Classy/services/firebase_web_auth.service.dart';
+import 'package:Classy/services/firebase_auth_complete.service.dart';
+import 'package:Classy/services/firebase_web_auth_fixed.service.dart';
+import 'package:Classy/services/firebase_error.service.dart';
 
 class AuthRequest {
   static FirebaseAuth _auth = FirebaseAuth.instance;
@@ -21,29 +26,76 @@ class AuthRequest {
       // Convert phone to email format for Firebase
       final email = "${phoneNumber.replaceAll('+', '').replaceAll(' ', '')}@classy.app";
       
-      final userCredential = await _auth.signInWithEmailAndPassword(
+      print("🔥 Attempting login for: $email");
+      print("📱 Phone number: $phoneNumber");
+      print("🌐 Platform: ${kIsWeb ? 'Web' : 'Mobile'}");
+      
+      // Use web-safe Firebase authentication service
+      final result = await FirebaseWebAuthFixedService.authenticateUserWebSafe(
         email: email,
         password: password,
+        isRegistration: false,
       );
       
-      if (userCredential.user != null) {
+      print("📊 Authentication result: ${result['success']}");
+      print("📊 Error type: ${result['error_type']}");
+      print("📊 Platform: ${result['platform']}");
+      
+      if (result['success'] == true) {
+        final user = result['user'] as User;
+        print("✅ User authenticated: ${user.uid}");
+        print("📧 User email: ${user.email}");
+        print("👤 User display name: ${user.displayName}");
+        
         // Get user data from Firestore
-        final userDoc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
-        final userData = userDoc.data();
+        print("📖 Getting user data from Firestore...");
+        final userDataResult = await FirebaseWebAuthFixedService.getUserFromFirestore(user.uid);
+        final userData = userDataResult['data'];
+        
+        print("📊 User data from Firestore: ${userData != null ? 'Found' : 'Not found'}");
+        
+        // Ensure user data has proper structure for User model
+        final formattedUserData = {
+          'id': user.uid,
+          'name': userData?['name'] ?? user.displayName ?? '',
+          'email': userData?['email'] ?? user.email ?? '',
+          'phone': userData?['phone'] ?? '',
+          'role': userData?['role'] ?? 'customer',
+          'photo': userData?['photo'] ?? user.photoURL ?? '',
+          'country_code': userData?['country_code'] ?? '+1',
+          'wallet_address': userData?['wallet_address'] ?? '',
+        };
+        
+        print("✅ User data formatted successfully");
+        print("📊 Formatted user data keys: ${formattedUserData.keys.toList()}");
         
         return ApiResponse(
           code: 200,
           message: "Login successful",
           body: {
-            'user': userData,
-            'token': await userCredential.user!.getIdToken(),
+            'user': formattedUserData,
+            'token': await user.getIdToken(),
           },
         );
+      } else {
+        print("❌ Login failed: ${result['error']}");
+        print("❌ Error type: ${result['error_type']}");
+        print("❌ Platform: ${result['platform']}");
+        
+        if (result['debug_info'] != null) {
+          print("🔍 Debug info: ${result['debug_info']}");
+        }
+        
+        return ApiResponse(code: 400, message: result['error'] ?? "Login failed");
       }
-      
-      return ApiResponse(code: 400, message: "Login failed");
     } catch (e) {
-      return ApiResponse(code: 500, message: e.toString());
+      // Handle other errors
+      print("❌ Login error: $e");
+      print("❌ Error type: ${e.runtimeType}");
+      print("❌ Error details: ${e.toString()}");
+      
+      String errorMessage = FirebaseErrorService.getUserFriendlyMessage(e);
+      return ApiResponse(code: 500, message: errorMessage);
     }
   }
 
@@ -57,43 +109,87 @@ class AuthRequest {
       // Convert phone to email format for Firebase
       final email = "${phoneNumber.replaceAll('+', '').replaceAll(' ', '')}@classy.app";
       
-      final userCredential = await _auth.createUserWithEmailAndPassword(
+      print("🔥 Attempting registration for: $email");
+      print("📱 Phone number: $phoneNumber");
+      print("👤 Name: $name");
+      print("🌐 Platform: ${kIsWeb ? 'Web' : 'Mobile'}");
+      
+      // Use web-safe Firebase authentication service
+      final result = await FirebaseWebAuthFixedService.authenticateUserWebSafe(
         email: email,
         password: password,
+        isRegistration: true,
+        displayName: name,
       );
       
-      if (userCredential.user != null) {
-        // Update user profile
-        await userCredential.user!.updateDisplayName(name);
+      print("📊 Registration result: ${result['success']}");
+      print("📊 Error type: ${result['error_type']}");
+      print("📊 Platform: ${result['platform']}");
+      
+      if (result['success'] == true) {
+        final user = result['user'] as User;
+        print("✅ User created: ${user.uid}");
+        print("📧 User email: ${user.email}");
+        print("👤 User display name: ${user.displayName}");
         
         // Save user data to Firestore
-        await _firestore.collection('users').doc(userCredential.user!.uid).set({
+        final userData = {
+          'id': user.uid,
           'name': name,
           'email': email,
           'phone': phoneNumber,
           'role': 'customer',
+          'photo': '',
+          'country_code': '+1', // Default country code
+          'wallet_address': '',
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
-        });
+        };
         
-        return ApiResponse(
-          code: 200,
-          message: "Registration successful",
-          body: {
-            'user': {
-              'id': userCredential.user!.uid,
-              'name': name,
-              'email': email,
-              'phone': phoneNumber,
-            },
-            'token': await userCredential.user!.getIdToken(),
-          },
+        print("💾 Saving user data to Firestore...");
+        print("📊 User data keys: ${userData.keys.toList()}");
+        
+        final saveResult = await FirebaseWebAuthFixedService.saveUserToFirestore(
+          uid: user.uid,
+          userData: userData,
         );
+        
+        print("📊 Save result: ${saveResult['success']}");
+        print("📊 Save platform: ${saveResult['platform']}");
+        
+        if (saveResult['success'] == true) {
+          print("✅ User data saved to Firestore");
+          return ApiResponse(
+            code: 200,
+            message: "Registration successful",
+            body: {
+              'user': userData,
+              'token': await user.getIdToken(),
+            },
+          );
+        } else {
+          print("❌ Failed to save user data: ${saveResult['error']}");
+          return ApiResponse(code: 400, message: saveResult['error'] ?? "Failed to save user data");
+        }
+      } else {
+        print("❌ Registration failed: ${result['error']}");
+        print("❌ Error type: ${result['error_type']}");
+        print("❌ Platform: ${result['platform']}");
+        
+        if (result['debug_info'] != null) {
+          print("🔍 Debug info: ${result['debug_info']}");
+        }
+        
+        return ApiResponse(code: 400, message: result['error'] ?? "Registration failed");
       }
-      
-      return ApiResponse(code: 400, message: "Registration failed");
     } catch (e) {
-      return ApiResponse(code: 500, message: e.toString());
+      // Handle other errors
+      print("❌ Registration error: $e");
+      print("❌ Error type: ${e.runtimeType}");
+      print("❌ Error details: ${e.toString()}");
+      
+      String errorMessage = FirebaseErrorService.getUserFriendlyMessage(e);
+      return ApiResponse(code: 500, message: errorMessage);
     }
   }
 
@@ -102,21 +198,24 @@ class AuthRequest {
     try {
       final email = "${phone.replaceAll('+', '').replaceAll(' ', '')}@classy.app";
       
-      await _auth.sendPasswordResetEmail(email: email);
+      final result = await FirebaseAuthCompleteService.resetPassword(email);
       
-      return ApiResponse(
-        code: 200,
-        message: "Password reset email sent",
-      );
+      if (result['success'] == true) {
+        return ApiResponse(code: 200, message: result['message'] ?? "Password reset email sent");
+      } else {
+        return ApiResponse(code: 400, message: result['error'] ?? "Failed to send reset email");
+      }
     } catch (e) {
-      return ApiResponse(code: 500, message: e.toString());
+      print("❌ Forgot password error: $e");
+      String errorMessage = FirebaseErrorService.getUserFriendlyMessage(e);
+      return ApiResponse(code: 500, message: errorMessage);
     }
   }
 
   // Logout
   static Future<ApiResponse> logoutRequest() async {
     try {
-      await _auth.signOut();
+      await FirebaseAuthCompleteService.signOut();
       await AuthServices.logout();
       
       return ApiResponse(
@@ -124,7 +223,9 @@ class AuthRequest {
         message: "Logout successful",
       );
     } catch (e) {
-      return ApiResponse(code: 500, message: e.toString());
+      print("❌ Logout error: $e");
+      String errorMessage = FirebaseErrorService.getUserFriendlyMessage(e);
+      return ApiResponse(code: 500, message: errorMessage);
     }
   }
 
@@ -147,7 +248,9 @@ class AuthRequest {
         message: "Profile updated successfully",
       );
     } catch (e) {
-      return ApiResponse(code: 500, message: e.toString());
+      print("❌ Update profile error: $e");
+      String errorMessage = FirebaseErrorService.getUserFriendlyMessage(e);
+      return ApiResponse(code: 500, message: errorMessage);
     }
   }
 

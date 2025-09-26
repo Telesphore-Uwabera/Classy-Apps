@@ -1,5 +1,5 @@
 class User {
-  int id;
+  String id; // Changed from int to String for Firebase UID compatibility
 
   String name;
   String? code;
@@ -9,7 +9,7 @@ class User {
   String? countryCode;
   String photo;
   String role;
-  String walletAddress;
+  // Wallet functionality removed - using Eversend, MoMo, and card payments only
 
   User({
     required this.id,
@@ -18,24 +18,24 @@ class User {
     this.email = "",
     required this.phone,
     this.rawPhone,
-    required this.countryCode,
-    required this.photo,
+    this.countryCode,
+    this.photo = "",
     required this.role,
-    required this.walletAddress,
+    // Wallet functionality removed
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
+      id: json['id']?.toString() ?? '',
       code: json['code'],
-      name: json['name'],
+      name: json['name'] ?? '',
       email: json['email'] ?? "",
       phone: json['phone'] ?? "",
       rawPhone: json['raw_phone'],
-      walletAddress: json['wallet_address'] ?? "",
+      // Wallet functionality removed
       countryCode: json['country_code'],
       photo: json['photo'] ?? "",
-      role: json['role_name'] ?? "client",
+      role: json['role'] ?? json['role_name'] ?? "client",
     );
   }
 
@@ -50,7 +50,7 @@ class User {
       'country_code': countryCode,
       'photo': photo,
       'role_name': role,
-      'wallet_address': walletAddress,
+      // Wallet functionality removed
     };
   }
 }

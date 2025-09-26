@@ -6,7 +6,7 @@ class Driver extends User {
   double? rating;
 
   Driver({
-    required int id,
+    required String id,
     String? code,
     required String name,
     required String email,
@@ -15,7 +15,7 @@ class Driver extends User {
     required String countryCode,
     required String photo,
     required String role,
-    required String walletAddress,
+    // Wallet functionality removed
     this.vehicle,
     this.rating,
   }) : super(
@@ -28,13 +28,13 @@ class Driver extends User {
           countryCode: countryCode,
           photo: photo,
           role: role,
-          walletAddress: walletAddress,
+          // Wallet functionality removed
         );
 
   //create fatory method to convert json to object
   factory Driver.fromJson(Map<String, dynamic> json) {
     return Driver(
-      id: json['id'],
+      id: json['id']?.toString() ?? '',
       code: json['code'] ?? "",
       name: json['name'],
       email: json['email'] ?? "",
@@ -47,7 +47,7 @@ class Driver extends User {
           json['vehicle'] != null ? Vehicle.fromJson(json['vehicle']) : null,
       //
       rawPhone: json['raw_phone'],
-      walletAddress: json['wallet_address'] ?? "",
+      // Wallet functionality removed
     );
   }
 }

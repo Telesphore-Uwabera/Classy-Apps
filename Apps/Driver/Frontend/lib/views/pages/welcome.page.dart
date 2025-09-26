@@ -17,9 +17,9 @@ class _WelcomePageState extends State<WelcomePage> {
     _checkAuthentication();
   }
 
-  void _checkAuthentication() {
+  void _checkAuthentication() async {
     // Check if user is already authenticated
-    if (AuthServices.authenticated()) {
+    if (await AuthServices.authenticated()) {
       // User is already logged in, go directly to dashboard
       Future.delayed(Duration(milliseconds: 500), () {
         if (mounted) {
@@ -59,7 +59,7 @@ class _WelcomePageState extends State<WelcomePage> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
+                            color: Colors.black.withOpacity(0.1),
                             blurRadius: 20,
                             offset: Offset(0, 10),
                           ),
@@ -91,7 +91,7 @@ class _WelcomePageState extends State<WelcomePage> {
                     Text(
                       'Your trusted partner for safe and reliable transportation services',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: Colors.white.withOpacity(0.9),
                         fontSize: screenWidth * 0.045,
                         height: 1.4,
                       ),

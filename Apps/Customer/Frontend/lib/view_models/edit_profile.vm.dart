@@ -85,13 +85,13 @@ class EditProfileViewModel extends MyBaseViewModel {
       accountPhoneNumber = "+${selectedCountry?.phoneCode}${phoneTEC.text}";
       print("Phone ==> $accountPhoneNumber");
 
-      final apiResponse = await _authRequest.updateProfile(
-        photo: newPhoto,
-        name: nameTEC.text,
-        email: emailTEC.text,
-        phone: accountPhoneNumber,
-        countryCode: selectedCountry?.countryCode,
-      );
+      final apiResponse = await AuthRequest.updateProfile({
+        'photo': newPhoto,
+        'name': nameTEC.text,
+        'email': emailTEC.text,
+        'phone': accountPhoneNumber,
+        'country_code': selectedCountry?.countryCode,
+      });
 
       //
       setBusy(false);

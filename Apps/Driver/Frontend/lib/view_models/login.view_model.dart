@@ -1,4 +1,5 @@
 import 'package:fuodz/services/alert.service.dart';
+import 'package:fuodz/services/driver_status.service.dart';
 import 'package:country_picker/country_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide User;
 import 'package:flutter/foundation.dart';
@@ -70,8 +71,17 @@ class LoginViewModel extends MyBaseViewModel with QrcodeScannerTrait {
           password: passwordTEC.text,
         );
         
-        // If successful, navigate to home
-        Navigator.of(viewContext).pushReplacementNamed(AppRoutes.homeRoute);
+        // ✅ CRITICAL SECURITY FIX: Validate driver status before allowing access
+        final statusValidation = await DriverStatusService.validateDriverStatus();
+        
+        if (statusValidation['canLogin'] == true) {
+          // Driver is approved, allow access
+          Navigator.of(viewContext).pushReplacementNamed(AppRoutes.homeRoute);
+        } else {
+          // Driver not approved, show detailed message and sign out
+          await FirebaseAuth.instance.signOut();
+          _showDetailedStatusMessage(statusValidation);
+        }
         
       } catch (error) {
         print("Firebase login error: $error");
@@ -377,5 +387,93 @@ class LoginViewModel extends MyBaseViewModel with QrcodeScannerTrait {
     viewContext.nextPage(RegisterPage());
     //final url = Api.register;
     // openExternalWebpageLink(url);
+  }
+
+  void _showDetailedStatusMessage(Map<String, dynamic> statusValidation) {
+    final status = statusValidation['status'] ?? 'unknown';
+    final reason = statusValidation['reason'] ?? 'Unable to access the app';
+    
+    String title = 'Access Denied';
+    String message = reason;
+    IconData icon = Icons.block;
+    Color iconColor = Colors.red;
+    
+    switch (status) {
+      case 'pending':
+        title = 'Account Pending Approval';
+        message = 'Your driver account is currently under review by our admin team. You will receive a notification once your account is approved. This process usually takes 24-48 hours.';
+        icon = Icons.hourglass_empty;
+        iconColor = Colors.orange;
+        break;
+      case 'rejected':
+        title = 'Account Rejected';
+        message = 'Your driver application has been rejected. Please contact our support team for more information.';
+        icon = Icons.cancel;
+        iconColor = Colors.red;
+        break;
+      case 'suspended':
+        title = 'Account Suspended';
+        message = 'Your driver account has been suspended. Please contact our support team for assistance.';
+        icon = Icons.pause_circle;
+        iconColor = Colors.red;
+        break;
+    }
+    
+    showDialog(
+      context: viewContext,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(icon, color: iconColor, size: 28),
+            SizedBox(width: 10),
+            Expanded(child: Text(title)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message),
+            if (status == 'pending') ...[
+              SizedBox(height: 16),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'What happens next?',
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue[700]),
+                    ),
+                    SizedBox(height: 8),
+                    Text('• Admin will review your application', style: TextStyle(color: Colors.blue[700])),
+                    Text('• You will receive an email/SMS notification', style: TextStyle(color: Colors.blue[700])),
+                    Text('• Once approved, you can login to the app', style: TextStyle(color: Colors.blue[700])),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          if (status == 'pending')
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('I understand'),
+            )
+          else
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Contact Support'),
+            ),
+        ],
+      ),
+    );
   }
 }

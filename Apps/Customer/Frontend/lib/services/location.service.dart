@@ -36,20 +36,25 @@ class LocationService {
   //     _currenctAddressSubject.stream;
 
   static Future<void> prepareLocationListener([bool oneTime = false]) async {
-    _permissionGranted = await location.hasPermission();
-    if (_permissionGranted == PermissionStatus.denied) {
-      _permissionGranted = await location.requestPermission();
-      if (_permissionGranted != PermissionStatus.granted) {
-        return;
+    try {
+      _permissionGranted = await location.hasPermission();
+      if (_permissionGranted == PermissionStatus.denied) {
+        _permissionGranted = await location.requestPermission();
+        if (_permissionGranted != PermissionStatus.granted) {
+          return;
+        }
       }
-    }
 
-    serviceEnabled = await location.serviceEnabled();
-    if (serviceEnabled == null || serviceEnabled! == false) {
-      serviceEnabled = await location.requestService();
+      serviceEnabled = await location.serviceEnabled();
       if (serviceEnabled == null || serviceEnabled! == false) {
-        return;
+        serviceEnabled = await location.requestService();
+        if (serviceEnabled == null || serviceEnabled! == false) {
+          return;
+        }
       }
+    } catch (e) {
+      print('Location service error: $e');
+      return;
     }
 
     _startLocationListner(oneTime);
@@ -75,31 +80,34 @@ class LocationService {
   }
 
   static void _startLocationListner([bool oneTime = false]) async {
-    //
-    //update location every 100meters
-    // await location.changeSettings(distanceFilter: 50);
-    // //listen
-    // currentLocationListener =
-    //     location.onLocationChanged.listen((LocationData currentLocation) {
-    //   // Use current location
-    //   _locationData = currentLocation;
-    //   //
-    //   geocodeCurrentLocation(true);
-    // });
+    try {
+      //update location every 100meters
+      // await location.changeSettings(distanceFilter: 50);
+      // //listen
+      // currentLocationListener =
+      //     location.onLocationChanged.listen((LocationData currentLocation) {
+      //   // Use current location
+      //   _locationData = currentLocation;
+      //   //
+      //   geocodeCurrentLocation(true);
+      // });
 
-    //listen
-    currentLocationListener = Geolocator.getPositionStream().listen((
-      Position currentLocation,
-    ) {
-      // Use current location
-      _locationData = LocationData.fromMap(currentLocation.toJson());
-      //
-      geocodeCurrentLocation(true);
-    });
+      //listen
+      currentLocationListener = Geolocator.getPositionStream().listen((
+        Position currentLocation,
+      ) {
+        // Use current location
+        _locationData = LocationData.fromMap(currentLocation.toJson());
+        //
+        geocodeCurrentLocation(true);
+      });
 
-    //get the current location on send to listeners
-    _locationData = await location.getLocation();
-    geocodeCurrentLocation(oneTime);
+      //get the current location on send to listeners
+      _locationData = await location.getLocation();
+      geocodeCurrentLocation(oneTime);
+    } catch (e) {
+      print('Location listener error: $e');
+    }
   }
 
   //

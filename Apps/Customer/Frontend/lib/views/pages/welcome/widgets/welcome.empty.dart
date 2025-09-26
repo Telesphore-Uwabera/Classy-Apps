@@ -14,7 +14,7 @@ import 'package:Classy/views/pages/vendor/widgets/section_vendors.view.dart';
 import 'package:Classy/widgets/cards/custom.visibility.dart';
 import 'package:Classy/widgets/cards/welcome_intro.view.dart';
 import 'package:Classy/widgets/custom_list_view.dart';
-import 'package:Classy/widgets/finance/wallet_management.view.dart';
+// Wallet functionality removed - using Eversend, MoMo, and card payments only
 import 'package:Classy/widgets/list_items/vendor_type.list_item.dart';
 import 'package:Classy/widgets/list_items/vendor_type.vertical_list_item.dart';
 import 'package:Classy/widgets/states/loading.shimmer.dart';

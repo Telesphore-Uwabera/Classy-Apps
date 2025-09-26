@@ -6,16 +6,14 @@ import 'package:fuodz/services/firebase.service.dart';
 class GeneralAppService {
   //
 
-//Hnadle background message
+//Handle background message
   @pragma('vm:entry-point')
-  static Future<void> onBackgroundMessageHandler(
-    RemoteMessage remoteMessage,
-  ) async {
+  static Future<void> onBackgroundMessageHandler(RemoteMessage message) async {
     //if it has not data then it is a normal notification, so ignore it
-    if (remoteMessage.data.isEmpty) return;
+    if (message.data.isEmpty) return;
     await Firebase.initializeApp();
-    await FirebaseService.instance.saveNewNotification(remoteMessage);
+    FirebaseService.instance.saveNewNotification(message);
     //normal notifications
-    FirebaseService.instance.showNotification(remoteMessage);
+    FirebaseService.instance.showNotification(message);
   }
 }

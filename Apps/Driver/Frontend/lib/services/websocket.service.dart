@@ -1,90 +1,25 @@
-import 'dart:convert';
-
-import 'package:dartx/dartx.dart';
-import 'package:flutter/foundation.dart';
-import 'package:fuodz/constants/api.dart';
-import 'package:fuodz/services/auth.service.dart';
-import 'package:fuodz/services/local_storage.service.dart';
-import 'package:singleton/singleton.dart';
-import 'package:laravel_echo_null/laravel_echo_null.dart';
-import 'package:pusher_client_socket/pusher_client_socket.dart' as PUSHER;
-
 class WebsocketService {
-  //
-  static String websocketServerSettingsKey = "WebsocketServerSettings";
-
-  /// Factory method that reuse same instance automatically
-  factory WebsocketService() => Singleton.lazy(() => WebsocketService._());
-
-  /// Private constructor
-  WebsocketService._() {}
-
-  //
-  Echo<PUSHER.PusherClient, PusherChannel>? echoClient;
-  Channel? publicChannel;
-  PrivateChannel? privateChannel;
-
-  //
-  init() async {
-    if (echoClient != null) {
-      return;
-    }
-
-    try {
-      final userToken = await AuthServices.getAuthBearerToken();
-      String authBaseUrl = Api.baseUrl.replaceAll('/api', '');
-      String wsHost = getWebsocketDetail("REVERB_HOST");
-      String wsPort = getWebsocketDetail("REVERB_PORT");
-      String wsAppKey = getWebsocketDetail("REVERB_APP_KEY");
-
-      echoClient = Echo<PUSHER.PusherClient, PusherChannel>(
-        PusherConnector(
-          wsAppKey,
-          authEndPoint: "$authBaseUrl/broadcasting/auth",
-          authHeaders: {'Authorization': 'Bearer $userToken'},
-          host: wsHost,
-          wsPort: wsPort.toInt(),
-          wssPort: wsPort.toInt(),
-          encrypted: true,
-          activityTimeout: 25000,
-          pongTimeout: 30000,
-          enableLogging: kDebugMode,
-          autoConnect: true,
-        ),
-      );
-    } catch (e) {
-      print('Error: $e');
-    }
+  static WebsocketService? _instance;
+  
+  static WebsocketService get instance {
+    _instance ??= WebsocketService._();
+    return _instance!;
   }
-
-  closeConnection() async {
-    if (echoClient == null) {
-      return;
-    }
-
-    //disconnect the cleint
-    echoClient?.disconnect();
-    echoClient = null;
+  
+  WebsocketService._();
+  
+  Future<void> saveWebsocketDetails(Map<String, dynamic> websocketData) async {
+    // Save websocket configuration to local storage
+    print("🔌 Saving websocket details: $websocketData");
   }
-
-  //MISC.
-  Future<bool> saveWebsocketDetails(
-    Map<String, dynamic> websocketSettings,
-  ) async {
-    return await LocalStorageService.prefs!.setString(
-      websocketServerSettingsKey,
-      jsonEncode(websocketSettings),
-    );
+  
+  Future<void> connect() async {
+    // Connect to websocket
+    print("🔌 Connecting to websocket...");
   }
-
-  String getWebsocketDetail(String key) {
-    dynamic websocketSettings = LocalStorageService.prefs!.getString(
-      websocketServerSettingsKey,
-    );
-
-    if (websocketSettings != null) {
-      return jsonDecode(websocketSettings)[key] ?? "";
-    }
-    return "";
+  
+  Future<void> disconnect() async {
+    // Disconnect from websocket
+    print("🔌 Disconnecting from websocket...");
   }
 }

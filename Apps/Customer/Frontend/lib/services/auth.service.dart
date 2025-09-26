@@ -29,14 +29,23 @@ class AuthServices {
   }
 
   static Future<bool> isAuthenticated() async {
-    await LocalStorageService.rxPrefs?.write(
-      AppStrings.authenticated,
-      true,
-      (value) {
-        return value;
-      },
-    );
-    return LocalStorageService.prefs!.setBool(AppStrings.authenticated, true);
+    try {
+      // Set authentication state in both storage systems
+      await LocalStorageService.rxPrefs?.write(
+        AppStrings.authenticated,
+        true,
+        (value) {
+          return value;
+        },
+      );
+      await LocalStorageService.prefs!.setBool(AppStrings.authenticated, true);
+      
+      print("✅ Authentication state set to true");
+      return true;
+    } catch (e) {
+      print("❌ Error setting authentication state: $e");
+      return false;
+    }
   }
 
   // Token
@@ -81,14 +90,35 @@ class AuthServices {
   ///
   static Future<User?> saveUser(dynamic jsonObject,
       {bool reload = true}) async {
-    final currentUser = User.fromJson(jsonObject);
     try {
+      print("💾 Saving user data...");
+      print("📊 User data type: ${jsonObject.runtimeType}");
+      print("📊 User data: $jsonObject");
+      
+      // Ensure jsonObject is a Map
+      Map<String, dynamic> userData;
+      if (jsonObject is Map<String, dynamic>) {
+        userData = jsonObject;
+      } else if (jsonObject is Map) {
+        userData = Map<String, dynamic>.from(jsonObject);
+      } else {
+        print("❌ Invalid user data type: ${jsonObject.runtimeType}");
+        return null;
+      }
+
+      print("📊 Processed user data: $userData");
+      
+      final currentUser = User.fromJson(userData);
+      print("✅ User object created: ${currentUser.id}");
+      
       await LocalStorageService.prefs?.setString(
         AppStrings.userKey,
         json.encode(
           currentUser.toJson(),
         ),
       );
+      
+      print("✅ User data saved to local storage");
 
       //subscribe to firebase topic
       List<String> roles = [
@@ -101,19 +131,29 @@ class AuthServices {
       for (var role in roles) {
         try {
           FirebaseService().firebaseMessaging.subscribeToTopic(role);
+          print("✅ Subscribed to topic: $role");
         } catch (error) {
-          print("Unable to subscribe to:: $role");
+          print("❌ Unable to subscribe to topic: $role - $error");
         }
       }
 
       //log the new
       if (reload) {
-        await SplashViewModel(AppService().navigatorKey.currentContext!)
-            .loadAppSettings();
+        try {
+          await SplashViewModel(AppService().navigatorKey.currentContext!)
+              .loadAppSettings();
+          print("✅ App settings reloaded");
+        } catch (error) {
+          print("❌ Error reloading app settings: $error");
+        }
       }
 
+      print("✅ User data saved successfully");
       return currentUser;
     } catch (error) {
+      print("❌ Error saving user: $error");
+      print("❌ Error type: ${error.runtimeType}");
+      print("❌ Error details: ${error.toString()}");
       return null;
     }
   }

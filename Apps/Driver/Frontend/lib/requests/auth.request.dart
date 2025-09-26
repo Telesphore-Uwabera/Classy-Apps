@@ -11,7 +11,7 @@ class AuthRequest extends HttpService {
     required String phone,
     required String password,
   }) async {
-    final apiResult = await post(Api.login, {
+    final apiResult = await HttpService.post(Api.login, data: {
       "phone": phone,
       "password": password,
       "role": "driver",
@@ -38,10 +38,9 @@ class AuthRequest extends HttpService {
       }
 
       print("Making request to: ${Api.driverRegister}");
-      final apiResult = await postCustomFiles(
+      final apiResult = await HttpService.post(
         Api.driverRegister,
-        null,
-        formData: formData,
+        data: formData,
       );
       
       print("Raw API result: ${apiResult.data}");
@@ -68,7 +67,7 @@ class AuthRequest extends HttpService {
     String firebaseVerificationId,
   ) async {
     //
-    final apiResult = await post(Api.verifyFirebaseOtp, {
+    final apiResult = await HttpService.post(Api.verifyFirebaseOtp, data: {
       "phone": phoneNumber,
       "firebase_id_token": firebaseVerificationId,
     });
@@ -82,7 +81,7 @@ class AuthRequest extends HttpService {
 
   //
   Future<ApiResponse> qrLoginRequest({required String code}) async {
-    final apiResult = await post(Api.qrlogin, {"code": code, "role": "driver"});
+    final apiResult = await HttpService.post(Api.qrlogin, data: {"code": code, "role": "driver"});
 
     return ApiResponse.fromResponse(apiResult);
   }
@@ -94,7 +93,7 @@ class AuthRequest extends HttpService {
     String? firebaseToken,
     String? customToken,
   }) async {
-    final apiResult = await post(Api.forgotPassword, {
+    final apiResult = await HttpService.post(Api.forgotPassword, data: {
       "phone": phone,
       "password": password,
       "firebase_id_token": firebaseToken,
@@ -106,13 +105,13 @@ class AuthRequest extends HttpService {
 
   //
   Future<ApiResponse> logoutRequest() async {
-    final apiResult = await get(Api.logout);
+    final apiResult = await HttpService.get(Api.logout);
     return ApiResponse.fromResponse(apiResult);
   }
 
   //
   Future<ApiResponse> updateOnlineStatus({required bool isOnline}) async {
-    final apiResult = await post(Api.updateProfile, {
+    final apiResult = await HttpService.post(Api.updateProfile, data: {
       "_method": "PUT",
       "is_online": isOnline ? 1 : 0,
     });
@@ -125,7 +124,7 @@ class AuthRequest extends HttpService {
     String? email,
     String? phone,
   }) async {
-    final apiResult = await postWithFiles(Api.updateProfile, {
+    final apiResult = await HttpService.post(Api.updateProfile, data: {
       "_method": "PUT",
       "name": name,
       "email": email,
@@ -141,7 +140,7 @@ class AuthRequest extends HttpService {
     required String new_password,
     required String new_password_confirmation,
   }) async {
-    final apiResult = await post(Api.updatePassword, {
+    final apiResult = await HttpService.post(Api.updatePassword, data: {
       "_method": "PUT",
       "password": password,
       "new_password": new_password,
@@ -152,7 +151,7 @@ class AuthRequest extends HttpService {
 
   //
   Future<ApiResponse> verifyPhoneAccount(String phone) async {
-    final apiResult = await get(
+    final apiResult = await HttpService.get(
       Api.verifyPhoneAccount,
       queryParameters: {"phone": phone},
     );
@@ -164,7 +163,7 @@ class AuthRequest extends HttpService {
     String phoneNumber, {
     bool isLogin = false,
   }) async {
-    final apiResult = await post(Api.sendOtp, {
+    final apiResult = await HttpService.post(Api.sendOtp, data: {
       "phone": phoneNumber,
       "is_login": isLogin,
     });
@@ -181,7 +180,7 @@ class AuthRequest extends HttpService {
     String code, {
     bool isLogin = false,
   }) async {
-    final apiResult = await post(Api.verifyOtp, {
+    final apiResult = await HttpService.post(Api.verifyOtp, data: {
       "phone": phoneNumber,
       "code": code,
       "is_login": isLogin,
@@ -196,7 +195,7 @@ class AuthRequest extends HttpService {
 
   Future<User> getMyDetails() async {
     //
-    final apiResult = await get(Api.myProfile);
+    final apiResult = await HttpService.get(Api.myProfile);
     final apiResponse = ApiResponse.fromResponse(apiResult);
     if (apiResponse.allGood) {
       return User.fromJson(apiResponse.body);
@@ -209,7 +208,7 @@ class AuthRequest extends HttpService {
     required String password,
     String? reason,
   }) async {
-    final apiResult = await post(Api.accountDelete, {
+    final apiResult = await HttpService.post(Api.accountDelete, data: {
       "_method": "DELETE",
       "password": password,
       "reason": reason,
@@ -225,10 +224,9 @@ class AuthRequest extends HttpService {
       ]);
     }
 
-    final apiResult = await postCustomFiles(
+    final apiResult = await HttpService.post(
       Api.documentSubmission,
-      null,
-      formData: formData,
+      data: formData,
     );
     return ApiResponse.fromResponse(apiResult);
   }

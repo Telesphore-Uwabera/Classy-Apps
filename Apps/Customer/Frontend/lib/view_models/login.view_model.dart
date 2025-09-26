@@ -9,6 +9,7 @@ import 'package:Classy/models/api_response.dart';
 import 'package:Classy/requests/auth.request.dart';
 import 'package:Classy/services/alert.service.dart';
 import 'package:Classy/services/auth.service.dart';
+import 'package:Classy/services/firebase_error.service.dart';
 import 'package:Classy/services/social_media_login.service.dart';
 import 'package:Classy/traits/qrcode_scanner.trait.dart';
 import 'package:Classy/utils/utils.dart';
@@ -254,48 +255,63 @@ class LoginViewModel extends MyBaseViewModel with QrcodeScannerTrait {
       setBusy(true);
 
       try {
-        // Use Firebase authentication instead of Laravel backend
+        // Use Firebase authentication with proper user data handling
         final phoneNumber = "+${selectedCountry?.phoneCode}${phoneTEC.text}";
         
-        // Sign in with Firebase using phone number and password
-        // For now, we'll use email/password authentication with a generated email
-        final email = "${phoneNumber.replaceAll('+', '').replaceAll(' ', '')}@classy.app";
+        print("🔐 Starting login process for: $phoneNumber");
         
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: email,
-          password: passwordTEC.text,
+        final apiResponse = await AuthRequest.loginRequest({
+          'phone': phoneNumber,
+          'password': passwordTEC.text,
+        });
+        
+        print("📊 Login response code: ${apiResponse.code}");
+        print("📊 Login response message: ${apiResponse.message}");
+        
+        if (apiResponse.code == 200) {
+          print("✅ Login successful, saving user data...");
+          
+          // Save user data and set authentication state
+          final user = await AuthServices.saveUser(apiResponse.body['user']);
+          await AuthServices.isAuthenticated();
+          
+          print("✅ User data saved, navigating to home...");
+          
+          // Navigate to home with proper state management
+          Navigator.of(viewContext).pushNamedAndRemoveUntil(
+            AppRoutes.homeRoute,
+            (_) => false,
+          );
+          
+          print("✅ Navigation completed");
+        } else {
+          print("❌ Login failed: ${apiResponse.message}");
+          viewContext.showToast(
+            msg: apiResponse.message ?? "Login failed", 
+            bgColor: Colors.red
+          );
+        }
+        
+      } on FirebaseAuthException catch (e) {
+        setBusy(false);
+        print("Firebase Auth error: ${e.code} - ${e.message}");
+        
+        String errorMessage = FirebaseErrorService.handleAuthException(e);
+        
+        viewContext.showToast(
+          msg: errorMessage,
+          bgColor: Colors.red,
         );
-        
-        // If successful, navigate to home
-        Navigator.of(viewContext).pushReplacementNamed(AppRoutes.homeRoute);
-        
       } catch (error) {
-        print("Firebase login error: $error");
+        setBusy(false);
+        print("General login error: $error");
         
-        // Try fallback login for web compatibility
-        if (kIsWeb) {
-          print("🌐 Attempting fallback login for web...");
-          try {
-            await _fallbackLogin();
-            return;
-          } catch (fallbackError) {
-            print("❌ Fallback login also failed: $fallbackError");
-          }
-        }
+        // Handle errors with user-friendly messages
+        String errorMessage = FirebaseErrorService.getUserFriendlyMessage(error);
         
-        // Handle specific Firebase errors
-        String errorMessage = "Please check your credentials and try again.";
-        if (error.toString().contains('user-not-found')) {
-          errorMessage = "No account found with this phone number.";
-        } else if (error.toString().contains('wrong-password')) {
-          errorMessage = "Incorrect password.";
-        } else if (error.toString().contains('invalid-email')) {
-          errorMessage = "Invalid phone number format.";
-        }
-        
-        AlertService.error(
-          title: "Login Failed".tr(),
-          text: errorMessage,
+        viewContext.showToast(
+          msg: errorMessage,
+          bgColor: Colors.red,
         );
       } finally {
         setBusy(false);
@@ -303,27 +319,6 @@ class LoginViewModel extends MyBaseViewModel with QrcodeScannerTrait {
     }
   }
 
-  // Fallback login for web compatibility
-  Future<void> _fallbackLogin() async {
-    print("🔄 Using fallback login method");
-    
-    // Create a mock user session
-    final phoneNumber = "+${selectedCountry?.phoneCode}${phoneTEC.text}";
-    
-    // Save user data locally
-    await AuthServices.saveUser({
-      'id': "user_${DateTime.now().millisecondsSinceEpoch}",
-      'name': "Demo User",
-      'email': "${phoneNumber.replaceAll('+', '').replaceAll(' ', '')}@classy.app",
-      'phone': phoneNumber,
-      'country_code': selectedCountry?.countryCode ?? 'US',
-    });
-    
-    print("✅ Fallback login completed");
-    
-    // Navigate to home
-    Navigator.of(viewContext).pushReplacementNamed(AppRoutes.homeRoute);
-  }
 
   //QRCode login
   void initateQrcodeLogin() async {

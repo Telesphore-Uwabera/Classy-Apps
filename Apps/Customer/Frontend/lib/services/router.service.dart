@@ -29,7 +29,7 @@ import 'package:Classy/views/pages/order/orders_details.page.dart';
 import 'package:Classy/views/pages/product/product_details.page.dart';
 import 'package:Classy/views/pages/profile/edit_profile.page.dart';
 import 'package:Classy/views/pages/search/search.page.dart';
-import 'package:Classy/views/pages/wallet/wallet.page.dart';
+// Wallet functionality removed - using Eversend, MoMo, and card payments only
 import 'package:Classy/views/shared/location_fetch.page.dart';
 import 'package:Classy/views/pages/settings.page.dart';
 import 'package:Classy/views/pages/help_support.page.dart';
@@ -156,11 +156,7 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       );
 
     //wallets
-    case AppRoutes.walletRoute:
-      return MaterialPageRoute(
-        settings: RouteSettings(name: AppRoutes.walletRoute),
-        builder: (context) => WalletPage(),
-      );
+    // Wallet functionality removed - using Eversend, MoMo, and card payments only
 
     case AppRoutes.paymentMethodsRoute:
       return MaterialPageRoute(

@@ -6,7 +6,7 @@ import 'package:Classy/constants/app_routes.dart';
 import 'package:Classy/constants/home_screen.config.dart';
 import 'package:Classy/extensions/context.dart';
 import 'package:Classy/services/app.service.dart';
-import 'package:Classy/services/location.service.dart';
+import 'package:Classy/services/simple_location.dart';
 import 'package:Classy/services/auth.service.dart';
 import 'package:Classy/services/location_preferences.service.dart';
 import 'package:Classy/models/search.dart';
@@ -26,11 +26,7 @@ import 'package:Classy/utils/ui_spacer.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:Classy/services/web_location.service.dart';
-import 'package:Classy/requests/wallet.request.dart';
-import 'package:Classy/models/wallet.dart';
+// Wallet functionality removed - using Eversend, MoMo, and card payments only
 
 class WelcomePage extends StatefulWidget {
   WelcomePage({
@@ -78,10 +74,7 @@ class _CustomerHomeState extends State<_CustomerHome> {
   String _homeAddress = "Not set";
   User? _currentUser;
   
-  // Wallet-related state
-  double walletBalance = 0.0;
-  bool isLoadingWallet = true;
-  final WalletRequest _walletRequest = WalletRequest();
+  // Payment methods: Eversend, MoMo, and Card payments only
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
 
@@ -91,39 +84,28 @@ class _CustomerHomeState extends State<_CustomerHome> {
     _loadUserData();
     _fetchCurrentLocation();
     _loadSavedAddresses();
-    _fetchWalletBalance();
+  }
+
+  @override
+  void dispose() {
+    // Cancel any ongoing operations
+    super.dispose();
   }
 
   Future<void> _loadUserData() async {
     try {
       final user = await AuthServices.getCurrentUser(force: true);
-      setState(() {
-        _currentUser = user;
-      });
+      if (mounted) {
+        setState(() {
+          _currentUser = user;
+        });
+      }
     } catch (e) {
       print('Error loading user data: $e');
     }
   }
 
-  Future<void> _fetchWalletBalance() async {
-    try {
-      setState(() {
-        isLoadingWallet = true;
-      });
-      
-      final wallet = await _walletRequest.walletBalance();
-      setState(() {
-        walletBalance = wallet.balance ?? 0.0;
-        isLoadingWallet = false;
-      });
-    } catch (e) {
-      print('Error fetching wallet balance: $e');
-      setState(() {
-        walletBalance = 0.0;
-        isLoadingWallet = false;
-      });
-    }
-  }
+  // Wallet functionality removed - using Eversend, MoMo, and card payments only
 
   Future<void> _pickImage() async {
     try {
@@ -173,90 +155,50 @@ class _CustomerHomeState extends State<_CustomerHome> {
   }
 
   Future<void> _loadSavedAddresses() async {
+    // Load saved addresses from preferences
     final workAddr = await _locationService.getFormattedWorkAddress();
     final homeAddr = await _locationService.getFormattedHomeAddress();
-    final currentAddr = await _locationService.getCurrentLocation();
+    
     setState(() {
       _workAddress = workAddr;
       _homeAddress = homeAddr;
-      if (currentAddr != null && currentAddr.isNotEmpty) {
-        locationText = currentAddr;
-        isLoadingLocation = false;
-      }
+      // Current location will be fetched by _fetchCurrentLocation()
     });
   }
 
   Future<void> _fetchCurrentLocation() async {
     try {
-      // For web, use improved web location service
-      if (kIsWeb) {
-        // First check if location service is enabled
-        final isEnabled = await WebLocationService.isLocationServiceEnabled();
-        if (!isEnabled) {
-          setState(() {
-            locationText = "Location services disabled";
-            isLoadingLocation = false;
-          });
-          return;
-        }
+      if (mounted) {
+        setState(() {
+          isLoadingLocation = true;
+        });
+      }
 
-        // Request permission if needed
-        final hasPermission = await WebLocationService.requestLocationPermission();
-        if (!hasPermission) {
-          setState(() {
-            locationText = "Location permission denied";
-            isLoadingLocation = false;
-          });
-          return;
-        }
-
-        // Get current address with better error handling
-        final address = await WebLocationService.getCurrentAddress(
-          timeout: Duration(seconds: 15),
-        );
-        
-        if (address != null && address.isNotEmpty) {
-          setState(() {
-            locationText = address;
-            isLoadingLocation = false;
-          });
-          // Save the location
-          await _saveLocation(address);
-        } else {
-          setState(() {
-            locationText = "Tap to set location";
-            isLoadingLocation = false;
-          });
-        }
-      } else {
-        // For mobile, use the existing location service
-        await LocationService.prepareLocationListener(true);
-      await Future.delayed(Duration(seconds: 2));
+      // Use simple location service
+      String? address = await SimpleLocationService.getCurrentAddress();
       
-      final address = LocationService.currenctAddress;
+      if (mounted) {
+        setState(() {
+          locationText = address ?? "Tap to set location";
+          isLoadingLocation = false;
+        });
+      }
+      
+      // Save the location if we got one
       if (address != null) {
-          final addressText = address.addressLine ?? address.featureName ?? "Current Location";
-        setState(() {
-            locationText = addressText;
-          isLoadingLocation = false;
-        });
-          // Save the location
-          await _saveLocation(addressText);
-      } else {
-        setState(() {
-          locationText = "Location not available";
-          isLoadingLocation = false;
-        });
-        }
+        await _saveLocation(address);
       }
     } catch (e) {
       print('Location fetch error: $e');
-      setState(() {
-        locationText = "Tap to set location";
-        isLoadingLocation = false;
-      });
+      if (mounted) {
+        setState(() {
+          locationText = "Tap to set location";
+          isLoadingLocation = false;
+        });
+      }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -311,20 +253,18 @@ class _CustomerHomeState extends State<_CustomerHome> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        "Wallet Balance".text.gray500.sm.make(),
+                        "Payment Methods".text.gray500.sm.make(),
                         UiSpacer.verticalSpace(space: 4),
-                        isLoadingWallet
-                            ? "Loading...".text.gray500.make()
-                            : "UGX ${walletBalance.toStringAsFixed(0)}".text.gray700.bold.make(),
+                        "Eversend, MoMo, Card".text.gray700.bold.make(),
                       ],
                     ),
                 ),
                 IconButton(
-                    icon: Icon(Icons.refresh, color: AppColor.primaryColor),
+                    icon: Icon(Icons.payment, color: AppColor.primaryColor),
                   onPressed: () {
-                      _fetchWalletBalance();
+                      // Navigate to payment methods
                     },
-                    tooltip: 'Refresh wallet balance',
+                    tooltip: 'Payment methods',
                 ),
               ]),
               ),
