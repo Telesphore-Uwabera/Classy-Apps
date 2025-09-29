@@ -5,6 +5,9 @@ import 'package:Classy/utils/ui_spacer.dart';
 import 'package:localize_and_translate/localize_and_translate.dart';
 import 'package:velocity_x/velocity_x.dart';
 import 'package:Classy/services/firebase_payment.service.dart';
+import 'package:Classy/views/pages/payment/add_credit_card.page.dart';
+import 'package:Classy/views/pages/payment/add_mobile_money.page.dart';
+import 'package:Classy/views/pages/payment/add_bank_account.page.dart';
 
 class PaymentMethodsPage extends StatefulWidget {
   const PaymentMethodsPage({super.key});
@@ -374,9 +377,16 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
                     icon: Icons.credit_card,
                     title: "Add Credit/Debit Card".tr(),
                     subtitle: "Visa, Mastercard, American Express".tr(),
-                    onTap: () {
+                    onTap: () async {
                       Navigator.pop(context);
-                      // TODO: Navigate to add card page
+                      final result = await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => AddCreditCardPage(),
+                        ),
+                      );
+                      if (result == true) {
+                        _loadPaymentMethods(); // Refresh the list
+                      }
                     },
                   ),
                   
@@ -386,9 +396,16 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
                     icon: Icons.phone_android,
                     title: "Add Mobile Money".tr(),
                     subtitle: "MTN, Airtel, Vodafone".tr(),
-                    onTap: () {
+                    onTap: () async {
                       Navigator.pop(context);
-                      // TODO: Navigate to add mobile money page
+                      final result = await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => AddMobileMoneyPage(),
+                        ),
+                      );
+                      if (result == true) {
+                        _loadPaymentMethods(); // Refresh the list
+                      }
                     },
                   ),
                   
@@ -398,9 +415,16 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
                     icon: Icons.account_balance,
                     title: "Add Bank Account".tr(),
                     subtitle: "Direct bank transfer".tr(),
-                    onTap: () {
+                    onTap: () async {
                       Navigator.pop(context);
-                      // TODO: Navigate to add bank account page
+                      final result = await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => AddBankAccountPage(),
+                        ),
+                      );
+                      if (result == true) {
+                        _loadPaymentMethods(); // Refresh the list
+                      }
                     },
                   ),
                 ]),
