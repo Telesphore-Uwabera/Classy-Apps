@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Drivers collection - drivers can read their own data regardless of status
+    // Status validation is handled in the app logic, not security rules
+    match /drivers/{driverId} {
+      // Allow drivers to read their own data
+      allow read: if request.auth != null && request.auth.uid == driverId;
+      
+      // Allow drivers to update their own profile (limited fields)
+      allow update: if request.auth != null 
+        && request.auth.uid == driverId 
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'adminAction']);
+      
+      // Allow creation during registration
+      allow create: if request.auth != null && request.auth.uid == driverId;
+    }
+    
+    // Orders collection - drivers can only access their own orders
+    match /orders/{orderId} {
+      allow read, write: if request.auth != null 
+        && (resource.data.driverId == request.auth.uid 
+            || resource.data.customerId == request.auth.uid);
+    }
+    
+    // Notifications collection - users can only access their own notifications
+    match /notifications/{notificationId} {
+      allow read, write: if request.auth != null 
+        && resource.data.userId == request.auth.uid;
+    }
+  }
+}

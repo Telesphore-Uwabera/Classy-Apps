@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "156854442550",
+    "project_id": "classyapp-unified-backend",
+    "storage_bucket": "classyapp-unified-backend.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:156854442550:android:d13731da964675113b9697",
+        "android_client_info": {
+          "package_name": "com.classy.customer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCugyfh2vjI7gHqGb6uRCmAKNV0xWG_Xrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:156854442550:android:f96d46d9f1c961983b9697",
+        "android_client_info": {
+          "package_name": "com.classy.driver"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCugyfh2vjI7gHqGb6uRCmAKNV0xWG_Xrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:156854442550:android:6a25e42c2bb8e6ed3b9697",
+        "android_client_info": {
+          "package_name": "com.classy.vendor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCugyfh2vjI7gHqGb6uRCmAKNV0xWG_Xrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
