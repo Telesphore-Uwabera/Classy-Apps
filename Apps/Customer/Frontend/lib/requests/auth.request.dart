@@ -236,16 +236,28 @@ class AuthRequest {
         return ApiResponse(code: 401, message: "User not authenticated");
       }
       
-      // Update Firestore document
-      await _firestore.collection('users').doc(user.uid).update({
-        ...data,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      // Get Firebase ID token
+      final token = await user.getIdToken();
       
-      return ApiResponse(
-        code: 200,
-        message: "Profile updated successfully",
+      // Call backend API instead of direct Firestore update
+      final httpService = HttpService();
+      final response = await httpService.put(
+        '/api/auth/profile',
+        data,
       );
+      
+      if (response.statusCode == 200) {
+        return ApiResponse(
+          code: 200,
+          message: "Profile updated successfully",
+          body: response.data,
+        );
+      } else {
+        return ApiResponse(
+          code: response.statusCode ?? 500,
+          message: response.data['message'] ?? 'Profile update failed',
+        );
+      }
     } catch (e) {
       print("❌ Update profile error: $e");
       String errorMessage = FirebaseErrorService.getUserFriendlyMessage(e);

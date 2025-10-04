@@ -6,6 +6,7 @@ import 'package:fuodz/models/notification.dart';
 import 'package:fuodz/models/product.dart';
 import 'package:fuodz/views/pages/auth/forgot_password.page.dart';
 import 'package:fuodz/views/pages/auth/login.page.dart';
+import 'package:fuodz/views/pages/auth/create_account.page.dart';
 import 'package:fuodz/views/pages/home.page.dart';
 // import 'package:fuodz/widgets/cards/language_selector.view.dart'; // Removed language selection
 import 'package:fuodz/views/pages/notification/notification_details.page.dart';
@@ -22,6 +23,9 @@ Route<dynamic> generateRoute(RouteSettings settings) {
   switch (settings.name) {
     case AppRoutes.loginRoute:
       return MaterialPageRoute(builder: (context) => LoginPage());
+
+    case AppRoutes.createAccountRoute:
+      return MaterialPageRoute(builder: (context) => CreateAccountPage());
 
     case AppRoutes.forgotPasswordRoute:
       return MaterialPageRoute(builder: (context) => ForgotPasswordPage());

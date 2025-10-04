@@ -49,12 +49,22 @@ android {
     }
 
     buildTypes {
+        debug {
+            isShrinkResources = false
+            isMinifyEnabled = false
+        }
         release {
             isShrinkResources = true
             isMinifyEnabled = true
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
+    }
+    
+    // Asset handling configuration
+    aaptOptions {
+        noCompress += listOf("svg", "ttf", "otf", "woff", "woff2", "eot")
+        ignoreAssetsPattern += "!.svgs:!.ttf:!.otf:!.woff:!.woff2:!.eot"
     }
 }
 

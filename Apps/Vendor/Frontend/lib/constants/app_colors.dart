@@ -149,8 +149,10 @@ class AppColor {
     //
     getColorsFromLocalStorage();
     //
-    final selectedColor =
-        appColorsObject != null ? appColorsObject[colorRef] : "#000000";
-    return selectedColor;
+    if (appColorsObject != null && appColorsObject is Map) {
+      final selectedColor = appColorsObject[colorRef];
+      return selectedColor != null ? selectedColor.toString() : "#000000";
+    }
+    return "#000000";
   }
 }

@@ -67,7 +67,7 @@ dependencies:
     git:
       url: https://github.com/imclerran/flutter-icons.git
       ref: dart-3
-  flutter_image_compress: ^2.4.0
+  # flutter_image_compress: ^2.4.0  # Removed due to build issues
   flutter_inappwebview: ^6.1.5
   flutter_localizations:
     sdk: flutter

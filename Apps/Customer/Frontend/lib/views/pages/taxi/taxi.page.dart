@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:Classy/constants/app_colors.dart';
 import 'package:Classy/models/vendor_type.dart';
 import 'package:Classy/services/location.service.dart';
+import 'package:Classy/views/pages/location/location_selection.page.dart';
+import 'package:Classy/widgets/enhanced_location_search.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'driver_connection.page.dart';
 import 'driver_search.page.dart';
 
@@ -15,6 +18,10 @@ class TaxiPage extends StatefulWidget {
 }
 
 class _TaxiPageState extends State<TaxiPage> {
+  String? _fromAddress;
+  String? _toAddress;
+  LatLng? _fromPosition;
+  LatLng? _toPosition;
 
   @override
   Widget build(BuildContext context) {
@@ -116,62 +123,31 @@ class _TaxiPageState extends State<TaxiPage> {
                       // Input fields
                       Column(
                         children: [
-                          // From field
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(color: Colors.grey.shade300, width: 1),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.location_on, color: Colors.grey.shade600, size: 20),
-                                SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    "Current Location",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                          // Enhanced Location Search Widgets
+                          EnhancedLocationSearch(
+                            label: "Pickup Location",
+                            initialValue: _fromAddress,
+                            hintText: "Where should we pick you up?",
+                            onLocationSelected: (address, coordinates) {
+                              setState(() {
+                                _fromAddress = address;
+                                _fromPosition = coordinates;
+                              });
+                            },
                           ),
                           
                           SizedBox(height: 16),
                           
-                          // To field
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(color: Colors.grey.shade300, width: 1),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.location_on, color: Colors.grey.shade600, size: 20),
-                                SizedBox(width: 12),
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () => _showLocationSearch(context),
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(vertical: 8),
-                                      child: Text(
-                                        "Where to?",
-                                        style: TextStyle(
-                                          color: Colors.grey.shade500,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                          EnhancedLocationSearch(
+                            label: "Destination",
+                            initialValue: _toAddress,
+                            hintText: "Where are you going?",
+                            onLocationSelected: (address, coordinates) {
+                              setState(() {
+                                _toAddress = address;
+                                _toPosition = coordinates;
+                              });
+                            },
                           ),
                         ],
                       ),
@@ -224,36 +200,39 @@ class _TaxiPageState extends State<TaxiPage> {
                       SizedBox(width: 16),
                       
                       // NOW button
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColor.primaryColor,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Stack(
-                          children: [
-                            // Button
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                              child: Text(
-                                "NOW",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                      GestureDetector(
+                        onTap: () => _openLocationSelection(),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColor.primaryColor,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Stack(
+                            children: [
+                              // Button
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                child: Text(
+                                  "NOW",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
-                            ),
-                            
-                            // Triangle pointer
-                            Positioned(
-                              bottom: 0,
-                              left: 0,
-                              child: CustomPaint(
-                                size: Size(20, 20),
-                                painter: TrianglePainter(),
+                              
+                              // Triangle pointer
+                              Positioned(
+                                bottom: 0,
+                                left: 0,
+                                child: CustomPaint(
+                                  size: Size(20, 20),
+                                  painter: TrianglePainter(),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -265,6 +244,44 @@ class _TaxiPageState extends State<TaxiPage> {
         ),
       ),
     );
+  }
+  
+  Future<void> _openLocationSelection() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationSelectionPage(
+          initialFromAddress: _fromAddress,
+          initialToAddress: _toAddress,
+          initialFromPosition: _fromPosition,
+          initialToPosition: _toPosition,
+        ),
+      ),
+    );
+    
+    if (result != null) {
+      setState(() {
+        _fromAddress = result['from']['address'];
+        _fromPosition = result['from']['coordinates'];
+        _toAddress = result['to']['address'];
+        _toPosition = result['to']['coordinates'];
+      });
+      
+      // After selecting locations, proceed to driver search
+      if (_fromAddress != null && _toAddress != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DriverSearchPage(
+              pickup: _fromAddress!,
+              destination: _toAddress!,
+              serviceType: 'taxi',
+              vehicleTypeId: 1,
+            ),
+          ),
+        );
+      }
+    }
   }
   
   void _showLocationSearch(BuildContext context) {

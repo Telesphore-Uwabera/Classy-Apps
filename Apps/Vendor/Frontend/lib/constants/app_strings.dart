@@ -75,6 +75,9 @@ class AppStrings {
     //
     getAppSettingsFromLocalStorage();
     //
-    return appSettingsObject != null ? appSettingsObject[ref] : null;
+    if (appSettingsObject != null && appSettingsObject is Map) {
+      return appSettingsObject[ref];
+    }
+    return null;
   }
 }

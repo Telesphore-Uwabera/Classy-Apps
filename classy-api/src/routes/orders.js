@@ -84,6 +84,73 @@ router.get('/:id', verifyToken, async (req, res) => {
   }
 });
 
+// Create new order
+router.post('/', verifyToken, async (req, res) => {
+  try {
+    const {
+      type, // 'food', 'taxi', 'boda', 'service'
+      items,
+      customer_id,
+      vendor_id,
+      delivery_address,
+      pickup_address,
+      delivery_time,
+      payment_method,
+      subtotal,
+      delivery_fee,
+      service_fee,
+      discount,
+      total,
+      notes
+    } = req.body;
+
+    // Validate required fields
+    if (!type || !customer_id || !total) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Create order object
+    const orderData = {
+      type,
+      customer_id,
+      vendor_id: vendor_id || null,
+      items: items || [],
+      delivery_address: delivery_address || null,
+      pickup_address: pickup_address || null,
+      delivery_time: delivery_time || null,
+      payment_method: payment_method || 'cash',
+      subtotal: parseFloat(subtotal) || 0,
+      delivery_fee: parseFloat(delivery_fee) || 0,
+      service_fee: parseFloat(service_fee) || 0,
+      discount: parseFloat(discount) || 0,
+      total: parseFloat(total),
+      notes: notes || '',
+      status: 'pending',
+      created_at: new Date(),
+      updated_at: new Date(),
+      created_by: req.user.uid
+    };
+
+    // Save order to Firestore
+    const docRef = await db.collection(COLLECTIONS.ORDERS).add(orderData);
+    
+    // Get the created order
+    const createdOrder = await docRef.get();
+    
+    res.status(201).json({
+      success: true,
+      message: 'Order created successfully',
+      data: {
+        id: docRef.id,
+        ...createdOrder.data()
+      }
+    });
+  } catch (error) {
+    console.error('Error creating order:', error);
+    res.status(500).json({ error: 'Failed to create order', message: error.message });
+  }
+});
+
 // Update order status
 router.put('/:id/status', verifyToken, async (req, res) => {
   try {

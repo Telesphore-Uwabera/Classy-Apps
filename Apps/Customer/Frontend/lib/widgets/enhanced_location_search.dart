@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:velocity_x/velocity_x.dart';
 import 'package:localize_and_translate/localize_and_translate.dart';
+import 'package:Classy/constants/app_colors.dart';
+import 'package:Classy/views/pages/location/map_location_picker.page.dart';
 
 class EnhancedLocationSearch extends StatefulWidget {
   final String label;
@@ -46,12 +48,16 @@ class _EnhancedLocationSearchState extends State<EnhancedLocationSearch> {
     });
 
     try {
-      // Show a simple dialog for location input
-      final result = await showDialog<Map<String, dynamic>>(
-        context: context,
-        builder: (context) => _LocationSearchDialog(
-          hintText: widget.hintText ?? "Search for a place...",
-          initialValue: _selectedAddress,
+      // Open the enhanced map location picker
+      final result = await Navigator.push<Map<String, dynamic>>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MapLocationPickerPage(
+            initialAddress: _selectedAddress,
+            initialPosition: _selectedCoordinates,
+            title: "Select ${widget.label}",
+            hintText: widget.hintText ?? "Search for a place...",
+          ),
         ),
       );
 
@@ -93,6 +99,7 @@ class _EnhancedLocationSearchState extends State<EnhancedLocationSearch> {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
+              color: Colors.black87,
             ),
           ),
           SizedBox(height: 8),
@@ -101,16 +108,36 @@ class _EnhancedLocationSearchState extends State<EnhancedLocationSearch> {
             child: Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(
+                  color: _selectedAddress.isEmpty 
+                      ? Colors.grey.shade300 
+                      : AppColor.primaryColor.withOpacity(0.3),
+                  width: _selectedAddress.isEmpty ? 1 : 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.location_on,
-                    color: Colors.red,
-                    size: 20,
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColor.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.location_on,
+                      color: AppColor.primaryColor,
+                      size: 20,
+                    ),
                   ),
                   SizedBox(width: 12),
                   Expanded(
@@ -122,7 +149,7 @@ class _EnhancedLocationSearchState extends State<EnhancedLocationSearch> {
                                 height: 16,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColor.primaryColor),
                                 ),
                               ),
                               SizedBox(width: 8),
@@ -132,35 +159,79 @@ class _EnhancedLocationSearchState extends State<EnhancedLocationSearch> {
                               ),
                             ],
                           )
-                        : Text(
-                            _selectedAddress.isEmpty 
-                                ? (widget.hintText ?? "Tap to select location")
-                                : _selectedAddress,
-                            style: TextStyle(
-                              color: _selectedAddress.isEmpty 
-                                  ? Colors.grey[600] 
-                                  : Colors.black87,
-                              fontSize: 16,
-                            ),
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _selectedAddress.isEmpty 
+                                    ? (widget.hintText ?? "Tap to select location")
+                                    : _selectedAddress,
+                                style: TextStyle(
+                                  color: _selectedAddress.isEmpty 
+                                      ? Colors.grey[600] 
+                                      : Colors.black87,
+                                  fontSize: 16,
+                                  fontWeight: _selectedAddress.isEmpty 
+                                      ? FontWeight.normal 
+                                      : FontWeight.w500,
+                                ),
+                              ),
+                              if (_selectedAddress.isNotEmpty) ...[
+                                SizedBox(height: 4),
+                                Text(
+                                  "Tap to change location",
+                                  style: TextStyle(
+                                    color: Colors.grey[500],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                   ),
-                  Icon(
-                    Icons.search,
-                    color: Colors.grey[600],
-                    size: 20,
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColor.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.map,
+                      color: AppColor.primaryColor,
+                      size: 20,
+                    ),
                   ),
                 ],
               ),
             ),
           ),
           if (_selectedCoordinates != null) ...[
-            SizedBox(height: 4),
-            Text(
-              'Lat: ${_selectedCoordinates!.latitude.toStringAsFixed(6)}, '
-              'Lng: ${_selectedCoordinates!.longitude.toStringAsFixed(6)}',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
+            SizedBox(height: 8),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColor.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.gps_fixed,
+                    color: AppColor.primaryColor,
+                    size: 14,
+                  ),
+                  SizedBox(width: 4),
+                  Text(
+                    'Lat: ${_selectedCoordinates!.latitude.toStringAsFixed(6)}, '
+                    'Lng: ${_selectedCoordinates!.longitude.toStringAsFixed(6)}',
+                    style: TextStyle(
+                      color: AppColor.primaryColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -170,114 +241,3 @@ class _EnhancedLocationSearchState extends State<EnhancedLocationSearch> {
   }
 }
 
-class _LocationSearchDialog extends StatefulWidget {
-  final String hintText;
-  final String initialValue;
-
-  const _LocationSearchDialog({
-    required this.hintText,
-    required this.initialValue,
-  });
-
-  @override
-  _LocationSearchDialogState createState() => _LocationSearchDialogState();
-}
-
-class _LocationSearchDialogState extends State<_LocationSearchDialog> {
-  final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _latController = TextEditingController();
-  final TextEditingController _lngController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _addressController.text = widget.initialValue;
-    // Default to Kampala coordinates
-    _latController.text = '0.3476';
-    _lngController.text = '32.5825';
-  }
-
-  @override
-  void dispose() {
-    _addressController.dispose();
-    _latController.dispose();
-    _lngController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Select Location'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _addressController,
-              decoration: InputDecoration(
-                labelText: 'Address',
-                hintText: widget.hintText,
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _latController,
-                    decoration: InputDecoration(
-                      labelText: 'Latitude',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  ),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _lngController,
-                    decoration: InputDecoration(
-                      labelText: 'Longitude',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            final address = _addressController.text.trim();
-            final lat = double.tryParse(_latController.text.trim());
-            final lng = double.tryParse(_lngController.text.trim());
-            
-            if (address.isNotEmpty && lat != null && lng != null) {
-              Navigator.of(context).pop({
-                'address': address,
-                'coordinates': LatLng(lat, lng),
-              });
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Please enter valid address and coordinates'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          },
-          child: Text('Select'),
-        ),
-      ],
-    );
-  }
-}

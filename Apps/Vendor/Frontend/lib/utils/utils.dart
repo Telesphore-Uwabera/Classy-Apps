@@ -4,7 +4,7 @@ import 'package:basic_utils/basic_utils.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
+// import 'package:flutter_image_compress/flutter_image_compress.dart';  // Removed due to build issues
 import 'package:fuodz/constants/app_colors.dart';
 import 'package:fuodz/constants/app_strings.dart';
 import 'package:fuodz/models/vendor.dart';
@@ -99,7 +99,7 @@ class Utils {
     required File file,
     String? targetPath,
     int quality = 40,
-    CompressFormat compressFormat = CompressFormat.jpeg,
+    // CompressFormat compressFormat = CompressFormat.jpeg,  // Removed due to build issues
   }) async {
     if (targetPath == null) {
       targetPath =
@@ -110,24 +110,24 @@ class Utils {
       print("file path ==> $targetPath");
     }
 
-    var result = await FlutterImageCompress.compressAndGetFile(
-      file.absolute.path,
-      targetPath,
-      quality: quality,
-      format: compressFormat,
-    );
-
-    if (kDebugMode) {
-      print("unCompress file size ==> ${file.lengthSync()}");
-      if (result != null) {
-        print("Compress file size ==> ${result.length}");
-        print("Compress successful");
-      } else {
-        print("compress failed");
+    // Simple file copy instead of compression to avoid build issues
+    try {
+      final targetFile = File(targetPath);
+      await file.copy(targetPath);
+      
+      if (kDebugMode) {
+        print("Original file size ==> ${file.lengthSync()}");
+        print("Copied file size ==> ${targetFile.lengthSync()}");
+        print("File copy successful");
       }
-    }
 
-    return result != null ? File(result.path) : null;
+      return targetFile;
+    } catch (e) {
+      if (kDebugMode) {
+        print("File copy failed: $e");
+      }
+      return null;
+    }
   }
 
   static setJiffyLocale() async {

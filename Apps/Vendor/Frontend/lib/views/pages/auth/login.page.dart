@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fuodz/constants/app_images.dart';
 import 'package:fuodz/constants/app_strings.dart';
+import 'package:fuodz/constants/app_routes.dart';
 import 'package:fuodz/constants/sizes.dart';
 import 'package:fuodz/services/validator.service.dart';
 import 'package:fuodz/utils/ui_spacer.dart';
@@ -162,16 +163,13 @@ class _LoginPageState extends State<LoginPage> {
                         }),
                       ]).centered().py4(),
 
-                      //registration link
-                      Visibility(
-                        visible: AppStrings.partnersCanRegister,
-                        child:
-                            CustomOutlineButton(
-                              title: "Don't have an account? Register".tr(),
-                              onPressed: model.openRegistrationlink,
-                              color: const Color(0xFFE91E63),
-                            ).wFull(context).centered(),
-                      ),
+                      //registration link - Always show create account button
+                      VStack([
+                        "Don't have an account?".tr().text.sm.gray600.makeCentered(),
+                        "Create Account".tr().text.sm.underline.color(const Color(0xFFE91E63)).makeCentered().onInkTap(() {
+                          Navigator.of(context).pushNamed(AppRoutes.createAccountRoute);
+                        }),
+                      ]).centered().py8(),
                     ], crossAlignment: CrossAxisAlignment.end),
                   ).py20(),
                 ])

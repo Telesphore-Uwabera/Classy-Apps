@@ -13,6 +13,7 @@ const driverRoutes = require('./routes/drivers');
 const orderRoutes = require('./routes/orders');
 const productRoutes = require('./routes/products');
 const categoryRoutes = require('./routes/categories');
+const foodRoutes = require('./routes/food');
 const notificationRoutes = require('./routes/notifications');
 const interAppRoutes = require('./routes/inter-app');
 
@@ -63,6 +64,7 @@ app.use('/api/drivers', driverRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/food', foodRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/inter-app', interAppRoutes);
 
@@ -72,17 +74,18 @@ app.get('/', (req, res) => {
     message: 'Classy API Server',
     version: '1.0.0',
     status: 'running',
-    endpoints: {
-      health: '/health',
-      auth: '/api/auth',
-      vendors: '/api/vendors',
-      drivers: '/api/drivers',
-      orders: '/api/orders',
-      products: '/api/products',
-      categories: '/api/categories',
-      notifications: '/api/notifications',
-      interApp: '/api/inter-app'
-    }
+      endpoints: {
+        health: '/health',
+        auth: '/api/auth',
+        vendors: '/api/vendors',
+        drivers: '/api/drivers',
+        orders: '/api/orders',
+        products: '/api/products',
+        categories: '/api/categories',
+        food: '/api/food',
+        notifications: '/api/notifications',
+        interApp: '/api/inter-app'
+      }
   });
 });
 

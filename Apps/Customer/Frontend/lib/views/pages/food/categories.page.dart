@@ -61,126 +61,108 @@ class _FoodCategoriesPageState extends State<FoodCategoriesPage> {
       'name': 'Burger',
       'icon': Icons.lunch_dining,
       'color': Colors.orange,
-      'itemCount': 45,
       'image': 'assets/images/product.png',
     },
     {
       'name': 'Pizza',
       'icon': Icons.local_pizza,
       'color': Colors.red,
-      'itemCount': 32,
       'image': 'assets/images/product.png',
     },
     {
       'name': 'Salad',
       'icon': Icons.eco,
       'color': Colors.green,
-      'itemCount': 28,
       'image': 'assets/images/product.png',
     },
     {
       'name': 'Sushi',
       'icon': Icons.set_meal,
       'color': Colors.blue,
-      'itemCount': 15,
       'image': 'assets/images/product.png',
     },
     {
       'name': 'Chicken',
       'icon': Icons.restaurant,
       'color': Colors.brown,
-      'itemCount': 38,
       'image': 'assets/images/product.png',
     },
     {
       'name': 'Seafood',
       'icon': Icons.set_meal,
       'color': Colors.cyan,
-      'itemCount': 22,
       'image': 'assets/images/product.png',
     },
     {
       'name': 'Desserts',
       'icon': Icons.cake,
       'color': Colors.pink,
-      'itemCount': 18,
       'image': 'assets/images/product.png',
     },
     {
       'name': 'Beverages',
       'icon': Icons.local_drink,
       'color': Colors.purple,
-      'itemCount': 25,
       'image': 'assets/images/product.png',
     },
     {
       'name': 'Fast Food',
       'icon': Icons.fastfood,
       'color': Colors.amber,
-      'itemCount': 52,
       'image': 'assets/images/product.png',
     },
     {
       'name': 'Healthy',
       'icon': Icons.favorite,
       'color': Colors.lightGreen,
-      'itemCount': 31,
       'image': 'assets/images/product.png',
     },
     {
       'name': 'Asian',
       'icon': Icons.ramen_dining,
       'color': Colors.deepOrange,
-      'itemCount': 27,
       'image': 'assets/images/product.png',
     },
     {
       'name': 'Italian',
       'icon': Icons.restaurant,
       'color': Colors.green,
-      'itemCount': 19,
       'image': 'assets/images/product.png',
     },
     {
       'name': 'Mexican',
       'icon': Icons.local_fire_department,
       'color': Colors.red,
-      'itemCount': 24,
       'image': 'assets/images/product.png',
     },
     {
       'name': 'Indian',
       'icon': Icons.spa,
       'color': Colors.orange,
-      'itemCount': 21,
       'image': 'assets/images/product.png',
     },
     {
       'name': 'African',
       'icon': Icons.public,
       'color': Colors.brown,
-      'itemCount': 16,
       'image': 'assets/images/product.png',
     },
     {
       'name': 'Breakfast',
       'icon': Icons.free_breakfast,
       'color': Colors.yellow,
-      'itemCount': 33,
       'image': 'assets/images/product.png',
     },
     {
       'name': 'Lunch',
       'icon': Icons.lunch_dining,
       'color': Colors.blue,
-      'itemCount': 41,
       'image': 'assets/images/product.png',
     },
     {
       'name': 'Dinner',
       'icon': Icons.dinner_dining,
       'color': Colors.indigo,
-      'itemCount': 29,
       'image': 'assets/images/product.png',
     },
   ];
@@ -200,7 +182,7 @@ class _FoodCategoriesPageState extends State<FoodCategoriesPage> {
                 crossAxisCount: 2,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
-                childAspectRatio: 1.1,
+                childAspectRatio: 0.85, // Adjusted to prevent overflow
               ),
               itemCount: _categories.length,
               itemBuilder: (context, index) {
@@ -288,15 +270,16 @@ class _FoodCategoriesPageState extends State<FoodCategoriesPage> {
           ),
           
           // Category Info
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.all(12),
-              child: VStack([
-                category['name'].toString().text.bold.lg.make().centered(),
-                UiSpacer.verticalSpace(space: 4),
-                "${category['itemCount']} items".text.gray600.sm.make().centered(),
-              ]),
-            ),
+          Padding(
+            padding: EdgeInsets.all(12),
+            child: VStack([
+              category['name'].toString().text.bold.lg.make().centered(),
+              UiSpacer.verticalSpace(space: 4),
+              if (category['itemCount'] != null && category['itemCount'] > 0)
+                "${category['itemCount']} items".text.gray600.sm.make().centered()
+              else
+                "Browse items".text.gray600.sm.make().centered(),
+            ]),
           ),
         ]),
       ),

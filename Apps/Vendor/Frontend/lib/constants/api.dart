@@ -83,8 +83,8 @@ class Api {
   static String get users => "users";
 
   // ===== SETTINGS ENDPOINTS =====
-  static String get appSettings => "settings/app";
-  static String get appOnboardings => "settings/onboardings";
+  static String get appSettings => "inter-app/settings";
+  static String get appOnboardings => "inter-app/onboardings";
 
   // ===== GEOCODER ENDPOINTS =====
   static String get geocoderForward => "geocoder/forward";

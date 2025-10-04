@@ -290,6 +290,7 @@ class _AddCreditCardPageState extends State<AddCreditCardPage> {
     String? Function(String?)? validator,
     void Function(String)? onChanged,
     int maxLines = 1,
+    TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
     return VStack([
       Text(
@@ -308,6 +309,7 @@ class _AddCreditCardPageState extends State<AddCreditCardPage> {
         validator: validator,
         onChanged: onChanged,
         maxLines: maxLines,
+        textCapitalization: textCapitalization,
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(color: Colors.grey.shade400),

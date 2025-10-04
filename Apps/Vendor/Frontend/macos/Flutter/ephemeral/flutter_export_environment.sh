@@ -1,11 +1,12 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
-export "FLUTTER_ROOT=/Users/princeiranzi/development/flutter"
-export "FLUTTER_APPLICATION_PATH=/Users/princeiranzi/Downloads/Classy-Apps/Apps/Vendor/Frontend"
+export "FLUTTER_ROOT=/usr/local/share/flutter"
+export "FLUTTER_APPLICATION_PATH=/Users/user/Downloads/Classy-Apps-main/Apps/Vendor/Frontend"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
 export "FLUTTER_BUILD_DIR=build"
 export "FLUTTER_BUILD_NAME=1.7.72"
 export "FLUTTER_BUILD_NUMBER=80"
+export "FLUTTER_CLI_BUILD_MODE=debug"
 export "DART_OBFUSCATION=false"
 export "TRACK_WIDGET_CREATION=true"
 export "TREE_SHAKE_ICONS=false"

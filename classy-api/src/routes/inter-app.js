@@ -291,4 +291,101 @@ router.get('/categories', verifyToken, async (req, res) => {
   }
 });
 
+// Get app settings (for all apps)
+router.get('/settings', async (req, res) => {
+  try {
+    // Return default app settings
+    const settings = {
+      strings: {
+        app_name: "Classy",
+        company_name: "Classy",
+        currency: "UGX",
+        country_code: "UG",
+        enableChat: "1",
+        partnersCanRegister: "1",
+        otpGateway: "firebase",
+        useWebsocketAssignment: false,
+        qrcodeLogin: false
+      },
+      colors: {
+        primary: "#E91E63",
+        primary_dark: "#C2185B",
+        accent: "#FF4081",
+        background: "#FFFFFF",
+        surface: "#F5F5F5",
+        text: "#212121",
+        text_secondary: "#757575",
+        pendingColor: "#FF9800",
+        preparingColor: "#2196F3",
+        enrouteColor: "#9C27B0",
+        deliveredColor: "#4CAF50",
+        cancelledColor: "#F44336",
+        failedColor: "#F44336",
+        successfulColor: "#4CAF50",
+        openColor: "#4CAF50",
+        closeColor: "#F44336",
+        deliveryColor: "#2196F3",
+        pickupColor: "#FF9800",
+        ratingColor: "#FFC107"
+      },
+      ui: {
+        theme: "light",
+        primaryColor: "#E91E63",
+        accentColor: "#FF4081"
+      },
+      websocket: {
+        enabled: false,
+        url: ""
+      }
+    };
+
+    res.json({
+      success: true,
+      message: 'App settings fetched successfully',
+      data: settings
+    });
+  } catch (error) {
+    console.error('Error fetching app settings:', error);
+    res.status(500).json({ error: 'Failed to fetch app settings', message: error.message });
+  }
+});
+
+// Get app onboardings (for all apps)
+router.get('/onboardings', async (req, res) => {
+  try {
+    const onboardings = [
+      {
+        id: 1,
+        title: "Welcome to Classy",
+        description: "Your all-in-one delivery and service platform",
+        image: "assets/images/1.png",
+        color: "#E91E63"
+      },
+      {
+        id: 2,
+        title: "Easy Ordering",
+        description: "Order food, groceries, and services with just a few taps",
+        image: "assets/images/2.png",
+        color: "#2196F3"
+      },
+      {
+        id: 3,
+        title: "Fast Delivery",
+        description: "Get your orders delivered quickly and safely",
+        image: "assets/images/3.png",
+        color: "#4CAF50"
+      }
+    ];
+
+    res.json({
+      success: true,
+      message: 'App onboardings fetched successfully',
+      data: onboardings
+    });
+  } catch (error) {
+    console.error('Error fetching app onboardings:', error);
+    res.status(500).json({ error: 'Failed to fetch app onboardings', message: error.message });
+  }
+});
+
 module.exports = router;

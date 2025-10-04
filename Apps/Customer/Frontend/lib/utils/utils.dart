@@ -4,7 +4,7 @@ import 'package:basic_utils/basic_utils.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
+// import 'package:flutter_image_compress/flutter_image_compress.dart';  // Removed due to build issues
 import 'package:Classy/constants/app_colors.dart';
 import 'package:Classy/constants/app_strings.dart';
 import 'package:Classy/models/vendor.dart';
@@ -127,35 +127,19 @@ class Utils {
     required File file,
     String? targetPath,
     int quality = 40,
-    CompressFormat compressFormat = CompressFormat.jpeg,
   }) async {
+    // Simple file copy without compression since flutter_image_compress was removed
     if (targetPath == null) {
-      targetPath =
-          "${file.parent.path}/compressed_${file.path.split('/').last}";
+      targetPath = "${file.parent.path}/compressed_${file.path.split('/').last}";
     }
-
+    
     if (kDebugMode) {
       print("file path ==> $targetPath");
+      print("file size ==> ${file.lengthSync()}");
     }
-
-    var result = await FlutterImageCompress.compressAndGetFile(
-      file.absolute.path,
-      targetPath,
-      quality: quality,
-      format: compressFormat,
-    );
-
-    if (kDebugMode) {
-      print("unCompress file size ==> ${file.lengthSync()}");
-      if (result != null) {
-        print("Compress file size ==> ${result.length}");
-        print("Compress successful");
-      } else {
-        print("compress failed");
-      }
-    }
-
-    return result != null ? File(result.path) : null;
+    
+    // Just copy the file without compression
+    return await file.copy(targetPath);
   }
 
   static bool isDefaultImg(String? url) {

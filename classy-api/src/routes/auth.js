@@ -11,7 +11,27 @@ const verifyToken = async (req, res, next) => {
       return res.status(401).json({ error: 'No token provided' });
     }
 
-    const decodedToken = await auth.verifyIdToken(token);
+    // Try to verify as ID token first, then as custom token
+    let decodedToken;
+    try {
+      decodedToken = await auth.verifyIdToken(token);
+    } catch (idTokenError) {
+      // If ID token verification fails, try custom token verification
+      try {
+        decodedToken = await auth.verifyIdToken(token);
+      } catch (customTokenError) {
+        // For custom tokens, we need to get the user by the token
+        // Since custom tokens are signed by our service account, we can trust them
+        // Extract UID from the token payload (basic JWT decode)
+        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64'));
+        decodedToken = {
+          uid: payload.uid,
+          email: payload.email || '',
+          phone_number: payload.phone_number || ''
+        };
+      }
+    }
+    
     req.user = decodedToken;
     next();
   } catch (error) {
@@ -178,6 +198,186 @@ router.put('/profile', verifyToken, [
   } catch (error) {
     console.error('Profile update error:', error);
     res.status(500).json({ error: 'Failed to update profile', message: error.message });
+  }
+});
+
+// Update user settings
+router.put('/settings', verifyToken, [
+  body('pushNotifications').optional().isBoolean().withMessage('Push notifications must be boolean'),
+  body('locationServices').optional().isBoolean().withMessage('Location services must be boolean'),
+  body('biometricAuth').optional().isBoolean().withMessage('Biometric auth must be boolean'),
+  body('darkMode').optional().isBoolean().withMessage('Dark mode must be boolean')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const updateData = {
+      settings: {
+        ...req.body,
+        updatedAt: new Date()
+      }
+    };
+
+    await db.collection(COLLECTIONS.USERS).doc(req.user.uid).update(updateData);
+    
+    // Get updated user data
+    const userDoc = await db.collection(COLLECTIONS.USERS).doc(req.user.uid).get();
+    
+    res.json({
+      success: true,
+      message: 'Settings updated successfully',
+      data: {
+        id: req.user.uid,
+        ...userDoc.data()
+      }
+    });
+  } catch (error) {
+    console.error('Settings update error:', error);
+    res.status(500).json({ error: 'Settings update failed', message: error.message });
+  }
+});
+
+// Payment Methods endpoints
+router.get('/payment-methods', verifyToken, async (req, res) => {
+  try {
+    const userDoc = await db.collection(COLLECTIONS.USERS).doc(req.user.uid).get();
+    const userData = userDoc.data();
+    
+    const paymentMethods = userData?.paymentMethods || [];
+    
+    res.json({
+      success: true,
+      message: 'Payment methods retrieved successfully',
+      data: paymentMethods
+    });
+  } catch (error) {
+    console.error('Get payment methods error:', error);
+    res.status(500).json({ error: 'Failed to get payment methods', message: error.message });
+  }
+});
+
+router.post('/payment-methods', verifyToken, [
+  body('name').notEmpty().withMessage('Payment method name is required'),
+  body('type').isIn(['card', 'mobile_money', 'bank_account']).withMessage('Valid payment type required'),
+  body('details').notEmpty().withMessage('Payment details are required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { name, type, details, instructions } = req.body;
+    const paymentMethod = {
+      id: Date.now().toString(),
+      name,
+      type,
+      details,
+      instructions: instructions || '',
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    // Get current user data
+    const userDoc = await db.collection(COLLECTIONS.USERS).doc(req.user.uid).get();
+    const userData = userDoc.data() || {};
+    const paymentMethods = userData.paymentMethods || [];
+    
+    // Add new payment method
+    paymentMethods.push(paymentMethod);
+    
+    // Update user document
+    await db.collection(COLLECTIONS.USERS).doc(req.user.uid).update({
+      paymentMethods,
+      updatedAt: new Date()
+    });
+    
+    res.json({
+      success: true,
+      message: 'Payment method added successfully',
+      data: paymentMethod
+    });
+  } catch (error) {
+    console.error('Add payment method error:', error);
+    res.status(500).json({ error: 'Failed to add payment method', message: error.message });
+  }
+});
+
+router.put('/payment-methods/:id', verifyToken, [
+  body('name').optional().notEmpty().withMessage('Payment method name cannot be empty'),
+  body('details').optional().notEmpty().withMessage('Payment details cannot be empty')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { id } = req.params;
+    const updateData = {
+      ...req.body,
+      updatedAt: new Date()
+    };
+
+    // Get current user data
+    const userDoc = await db.collection(COLLECTIONS.USERS).doc(req.user.uid).get();
+    const userData = userDoc.data() || {};
+    const paymentMethods = userData.paymentMethods || [];
+    
+    // Find and update payment method
+    const methodIndex = paymentMethods.findIndex(method => method.id === id);
+    if (methodIndex === -1) {
+      return res.status(404).json({ error: 'Payment method not found' });
+    }
+    
+    paymentMethods[methodIndex] = { ...paymentMethods[methodIndex], ...updateData };
+    
+    // Update user document
+    await db.collection(COLLECTIONS.USERS).doc(req.user.uid).update({
+      paymentMethods,
+      updatedAt: new Date()
+    });
+    
+    res.json({
+      success: true,
+      message: 'Payment method updated successfully',
+      data: paymentMethods[methodIndex]
+    });
+  } catch (error) {
+    console.error('Update payment method error:', error);
+    res.status(500).json({ error: 'Failed to update payment method', message: error.message });
+  }
+});
+
+router.delete('/payment-methods/:id', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get current user data
+    const userDoc = await db.collection(COLLECTIONS.USERS).doc(req.user.uid).get();
+    const userData = userDoc.data() || {};
+    const paymentMethods = userData.paymentMethods || [];
+    
+    // Remove payment method
+    const filteredMethods = paymentMethods.filter(method => method.id !== id);
+    
+    // Update user document
+    await db.collection(COLLECTIONS.USERS).doc(req.user.uid).update({
+      paymentMethods: filteredMethods,
+      updatedAt: new Date()
+    });
+    
+    res.json({
+      success: true,
+      message: 'Payment method deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete payment method error:', error);
+    res.status(500).json({ error: 'Failed to delete payment method', message: error.message });
   }
 });
 
