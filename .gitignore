@@ -81,6 +81,8 @@ coverage/
 **/firebase_options.dart
 **/google-services.json
 **/GoogleService-Info.plist
+**/firebase-adminsdk-*.json
+**/service-account*.json
 
 # Environment files
 .env
